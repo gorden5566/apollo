@@ -14,14 +14,35 @@ import com.ctrip.framework.foundation.spi.provider.ServerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 默认的 ServerProvider 实现
+ */
 public class DefaultServerProvider implements ServerProvider {
   private static final Logger logger = LoggerFactory.getLogger(DefaultServerProvider.class);
+
+  /**
+   * linux 系统下默认路径
+   */
   private static final String SERVER_PROPERTIES_LINUX = "/opt/settings/server.properties";
+
+  /**
+   * windows 系统下默认路径
+   */
   private static final String SERVER_PROPERTIES_WINDOWS = "C:/opt/settings/server.properties";
 
+  /**
+   * 环境
+   */
   private String m_env;
+
+  /**
+   * 数据中心
+   */
   private String m_dc;
 
+  /**
+   * 属性值
+   */
   private Properties m_serverProperties = new Properties();
 
   @Override
@@ -29,6 +50,7 @@ public class DefaultServerProvider implements ServerProvider {
     try {
       String path = Utils.isOSWindows() ? SERVER_PROPERTIES_WINDOWS : SERVER_PROPERTIES_LINUX;
 
+      // 读取文件并初始化
       File file = new File(path);
       if (file.exists() && file.canRead()) {
         logger.info("Loading {}", file.getAbsolutePath());
@@ -37,6 +59,7 @@ public class DefaultServerProvider implements ServerProvider {
         return;
       }
 
+      // 初始化为空
       initialize(null);
     } catch (Throwable ex) {
       logger.error("Initialize DefaultServerProvider failed.", ex);
@@ -54,7 +77,10 @@ public class DefaultServerProvider implements ServerProvider {
         }
       }
 
+      // 初始化环境
       initEnvType();
+
+      // 初始化数据中心
       initDataCenter();
     } catch (Throwable ex) {
       logger.error("Initialize DefaultServerProvider failed.", ex);

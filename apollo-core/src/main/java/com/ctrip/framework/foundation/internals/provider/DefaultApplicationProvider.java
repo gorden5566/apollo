@@ -13,21 +13,37 @@ import com.ctrip.framework.foundation.internals.io.BOMInputStream;
 import com.ctrip.framework.foundation.spi.provider.ApplicationProvider;
 import com.ctrip.framework.foundation.spi.provider.Provider;
 
+/**
+ * 默认的 ApplicationProvider 实现
+ */
 public class DefaultApplicationProvider implements ApplicationProvider {
   private static final Logger logger = LoggerFactory.getLogger(DefaultApplicationProvider.class);
+
+  /**
+   * app属性配置默认路径
+   */
   public static final String APP_PROPERTIES_CLASSPATH = "/META-INF/app.properties";
+
+  /**
+   * app属性配置
+   */
   private Properties m_appProperties = new Properties();
 
+  /**
+   * AppId
+   */
   private String m_appId;
 
   @Override
   public void initialize() {
     try {
+      // 读取配置文件
       InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream(APP_PROPERTIES_CLASSPATH.substring(1));
       if (in == null) {
         in = DefaultApplicationProvider.class.getResourceAsStream(APP_PROPERTIES_CLASSPATH);
       }
 
+      // 初始配置
       initialize(in);
     } catch (Throwable ex) {
       logger.error("Initialize DefaultApplicationProvider failed.", ex);
@@ -77,6 +93,9 @@ public class DefaultApplicationProvider implements ApplicationProvider {
     return ApplicationProvider.class;
   }
 
+  /**
+   * 初始化AppId
+   */
   private void initAppId() {
     // 1. Get app.id from System Property
     m_appId = System.getProperty("app.id");

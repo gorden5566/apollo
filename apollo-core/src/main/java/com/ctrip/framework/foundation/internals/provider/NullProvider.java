@@ -7,6 +7,9 @@ import com.ctrip.framework.foundation.spi.provider.NetworkProvider;
 import com.ctrip.framework.foundation.spi.provider.Provider;
 import com.ctrip.framework.foundation.spi.provider.ServerProvider;
 
+/**
+ * 空的 Provider 实现
+ */
 public class NullProvider implements ApplicationProvider, NetworkProvider, ServerProvider {
   @Override
   public Class<? extends Provider> getType() {
