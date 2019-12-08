@@ -12,6 +12,9 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 网络接口工具类
+ */
 public enum NetworkInterfaceManager {
   INSTANCE;
 
@@ -19,7 +22,7 @@ public enum NetworkInterfaceManager {
 
   private InetAddress m_localHost;
 
-  private NetworkInterfaceManager() {
+  NetworkInterfaceManager() {
     load();
   }
 
