@@ -1,6 +1,8 @@
 package com.ctrip.framework.apollo.exceptions;
 
 /**
+ * apollo 配置状态异常
+ *
  * @author Jason Song(song_s@ctrip.com)
  */
 public class ApolloConfigStatusCodeException extends RuntimeException{
