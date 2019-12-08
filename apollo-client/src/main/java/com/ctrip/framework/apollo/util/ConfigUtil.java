@@ -19,26 +19,74 @@ import com.google.common.base.Strings;
  */
 public class ConfigUtil {
   private static final Logger logger = LoggerFactory.getLogger(ConfigUtil.class);
+
+  /**
+   * 刷新间隔，默认 5 minutes
+   */
   private int refreshInterval = 5;
   private TimeUnit refreshIntervalTimeUnit = TimeUnit.MINUTES;
-  private int connectTimeout = 1000; //1 second
-  private int readTimeout = 5000; //5 seconds
+
+  /**
+   * 连接超时时间，默认 1 second
+   */
+  private int connectTimeout = 1000;
+
+  /**
+   * 读取超时时间，默认 5 seconds
+   */
+  private int readTimeout = 5000;
+
+  /**
+   * 集群
+   */
   private String cluster;
-  private int loadConfigQPS = 2; //2 times per second
-  private int longPollQPS = 2; //2 times per second
-  //for on error retry
-  private long onErrorRetryInterval = 1;//1 second
-  private TimeUnit onErrorRetryIntervalTimeUnit = TimeUnit.SECONDS;//1 second
-  //for typed config cache of parser result, e.g. integer, double, long, etc.
-  private long maxConfigCacheSize = 500;//500 cache key
-  private long configCacheExpireTime = 1;//1 minute
-  private TimeUnit configCacheExpireTimeUnit = TimeUnit.MINUTES;//1 minute
+
+  /**
+   * 加载配置 qps，默认 2
+   */
+  private int loadConfigQPS = 2;
+
+  /**
+   * 长轮询 qps，默认 2
+   */
+  private int longPollQPS = 2;
+  /**
+   * 错误重试间隔，默认 1 second
+   * for on error retry
+   */
+  private long onErrorRetryInterval = 1;
+  private TimeUnit onErrorRetryIntervalTimeUnit = TimeUnit.SECONDS;
+
+  /**
+   * 最大配置缓存大小，默认 500 个缓存 key
+   * for typed config cache of parser result, e.g. integer, double, long, etc.
+   */
+  private long maxConfigCacheSize = 500;
+
+  /**
+   * 配置缓存过期时间，默认 1 minute
+   */
+  private long configCacheExpireTime = 1;
+  private TimeUnit configCacheExpireTimeUnit = TimeUnit.MINUTES;
+
+  /**
+   * 长轮询初始延迟时间（单位：毫秒）
+   */
   private long longPollingInitialDelayInMills = 2000;//2 seconds
+
+  /**
+   * 是否自动注入spring属性
+   */
   private boolean autoUpdateInjectedSpringProperties = true;
+
+  /**
+   * 警告日志输出速率限制
+   */
   private final RateLimiter warnLogRateLimiter;
 
   public ConfigUtil() {
-    warnLogRateLimiter = RateLimiter.create(0.017); // 1 warning log output per minute
+    // 1 warning log output per minute
+    warnLogRateLimiter = RateLimiter.create(0.017);
     initRefreshInterval();
     initConnectTimeout();
     initReadTimeout();
@@ -50,6 +98,8 @@ public class ConfigUtil {
   }
 
   /**
+   * 获取当前应用的 AppId
+   *
    * Get the app id for the current application.
    *
    * @return the app id or ConfigConsts.NO_APPID_PLACEHOLDER if app id is not available
@@ -100,6 +150,8 @@ public class ConfigUtil {
   }
 
   /**
+   * 获取当前环境
+   *
    * Get the current environment.
    *
    * @return the env, UNKNOWN if env is not set or invalid
@@ -108,6 +160,11 @@ public class ConfigUtil {
     return EnvUtils.transformEnv(Foundation.server().getEnvType());
   }
 
+  /**
+   * 获取本地 IP
+   *
+   * @return
+   */
   public String getLocalIp() {
     return Foundation.net().getHostAddress();
   }
@@ -116,6 +173,9 @@ public class ConfigUtil {
     return MetaDomainConsts.getDomain(getApolloEnv());
   }
 
+  /**
+   * 初始化连接超时时间
+   */
   private void initConnectTimeout() {
     String customizedConnectTimeout = System.getProperty("apollo.connectTimeout");
     if (!Strings.isNullOrEmpty(customizedConnectTimeout)) {
@@ -131,6 +191,9 @@ public class ConfigUtil {
     return connectTimeout;
   }
 
+  /**
+   * 初始化读取超时时间
+   */
   private void initReadTimeout() {
     String customizedReadTimeout = System.getProperty("apollo.readTimeout");
     if (!Strings.isNullOrEmpty(customizedReadTimeout)) {
@@ -146,6 +209,9 @@ public class ConfigUtil {
     return readTimeout;
   }
 
+  /**
+   * 初始刷新间隔
+   */
   private void initRefreshInterval() {
     String customizedRefreshInterval = System.getProperty("apollo.refreshInterval");
     if (!Strings.isNullOrEmpty(customizedRefreshInterval)) {
@@ -165,6 +231,9 @@ public class ConfigUtil {
     return refreshIntervalTimeUnit;
   }
 
+  /**
+   * 初始化qps
+   */
   private void initQPS() {
     String customizedLoadConfigQPS = System.getProperty("apollo.loadConfigQPS");
     if (!Strings.isNullOrEmpty(customizedLoadConfigQPS)) {
@@ -201,17 +270,29 @@ public class ConfigUtil {
     return onErrorRetryIntervalTimeUnit;
   }
 
+  /**
+   * 获取默认本地缓存目录
+   *
+   * @return
+   */
   public String getDefaultLocalCacheDir() {
+    // 获取定制缓存目录
     String cacheRoot = getCustomizedCacheRoot();
 
     if (!Strings.isNullOrEmpty(cacheRoot)) {
       return cacheRoot + File.separator + getAppId();
     }
 
+    // 获取默认目录
     cacheRoot = isOSWindows() ? "C:\\opt\\data\\%s" : "/opt/data/%s";
     return String.format(cacheRoot, getAppId());
   }
 
+  /**
+   * 获取定制缓存目录
+   *
+   * @return
+   */
   private String getCustomizedCacheRoot() {
     // 1. Get from System Property
     String cacheRoot = System.getProperty("apollo.cacheDir");
@@ -231,6 +312,11 @@ public class ConfigUtil {
     return cacheRoot;
   }
 
+  /**
+   * 是否为本地模式
+   *
+   * @return
+   */
   public boolean isInLocalMode() {
     try {
       return Env.LOCAL == getApolloEnv();
@@ -240,6 +326,11 @@ public class ConfigUtil {
     return false;
   }
 
+  /**
+   * 是否为 windows 系统
+   *
+   * @return
+   */
   public boolean isOSWindows() {
     String osName = System.getProperty("os.name");
     if (Strings.isNullOrEmpty(osName)) {
@@ -248,6 +339,9 @@ public class ConfigUtil {
     return osName.startsWith("Windows");
   }
 
+  /**
+   * 初始化最大配置缓存
+   */
   private void initMaxConfigCacheSize() {
     String customizedConfigCacheSize = System.getProperty("apollo.configCacheSize");
     if (!Strings.isNullOrEmpty(customizedConfigCacheSize)) {
@@ -271,6 +365,9 @@ public class ConfigUtil {
     return configCacheExpireTimeUnit;
   }
 
+  /**
+   * 初始化长轮询初始延迟时间
+   */
   private void initLongPollingInitialDelayInMills() {
     String customizedLongPollingInitialDelay = System.getProperty("apollo.longPollingInitialDelayInMills");
     if (!Strings.isNullOrEmpty(customizedLongPollingInitialDelay)) {
@@ -286,6 +383,9 @@ public class ConfigUtil {
     return longPollingInitialDelayInMills;
   }
 
+  /**
+   * 初始化是否自动注入spring属性
+   */
   private void initAutoUpdateInjectedSpringProperties() {
     // 1. Get from System Property
     String enableAutoUpdate = System.getProperty("apollo.autoUpdateInjectedSpringProperties");
