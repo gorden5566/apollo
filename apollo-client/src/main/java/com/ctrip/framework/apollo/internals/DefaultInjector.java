@@ -17,6 +17,8 @@ import com.google.inject.Guice;
 import com.google.inject.Singleton;
 
 /**
+ * 默认容器实现，基于 google guice
+ *
  * Guice injector
  * @author Jason Song(song_s@ctrip.com)
  */
@@ -25,6 +27,7 @@ public class DefaultInjector implements Injector {
 
   public DefaultInjector() {
     try {
+      // 在默认构造器中初始化
       m_injector = Guice.createInjector(new ApolloModule());
     } catch (Throwable ex) {
       ApolloConfigException exception = new ApolloConfigException("Unable to initialize Guice Injector!", ex);
@@ -53,6 +56,7 @@ public class DefaultInjector implements Injector {
   private static class ApolloModule extends AbstractModule {
     @Override
     protected void configure() {
+      // 配置所有的 bean，类似 spring 的 xml bean 配置
       bind(ConfigManager.class).to(DefaultConfigManager.class).in(Singleton.class);
       bind(ConfigFactoryManager.class).to(DefaultConfigFactoryManager.class).in(Singleton.class);
       bind(ConfigRegistry.class).to(DefaultConfigRegistry.class).in(Singleton.class);

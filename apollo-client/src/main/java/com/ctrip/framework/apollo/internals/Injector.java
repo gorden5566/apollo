@@ -1,6 +1,8 @@
 package com.ctrip.framework.apollo.internals;
 
 /**
+ * 容器工厂接口
+ *
  * @author Jason Song(song_s@ctrip.com)
  */
 public interface Injector {
