@@ -8,7 +8,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
 
+/**
+ * spi loader，用于加载 spi 实现
+ */
 public class ServiceBootstrap {
+
+  /**
+   * 加载第一个 spi 实现
+   *
+   * @param clazz
+   * @param <S>
+   * @return
+   */
   public static <S> S loadFirst(Class<S> clazz) {
     Iterator<S> iterator = loadAll(clazz);
     if (!iterator.hasNext()) {
@@ -19,6 +30,13 @@ public class ServiceBootstrap {
     return iterator.next();
   }
 
+  /**
+   * 加载所有的 spi 实现
+   *
+   * @param clazz
+   * @param <S>
+   * @return
+   */
   public static <S> Iterator<S> loadAll(Class<S> clazz) {
     ServiceLoader<S> loader = ServiceLoader.load(clazz);
 
