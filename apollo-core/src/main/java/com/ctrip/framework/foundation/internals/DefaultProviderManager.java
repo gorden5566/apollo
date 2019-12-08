@@ -11,21 +11,32 @@ import com.ctrip.framework.foundation.spi.provider.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 默认的 ProviderManager 实现
+ */
 public class DefaultProviderManager implements ProviderManager {
   private static final Logger logger = LoggerFactory.getLogger(DefaultProviderManager.class);
+
+  /**
+   * key: provider 类型
+   * value: provider 实例
+   */
   private Map<Class<? extends Provider>, Provider> m_providers = new LinkedHashMap<>();
 
   public DefaultProviderManager() {
+    // 注册 ApplicationProvider
     // Load per-application configuration, like app id, from classpath://META-INF/app.properties
     Provider applicationProvider = new DefaultApplicationProvider();
     applicationProvider.initialize();
     register(applicationProvider);
 
+    // 注册 NetworkProvider
     // Load network parameters
     Provider networkProvider = new DefaultNetworkProvider();
     networkProvider.initialize();
     register(networkProvider);
 
+    // 注册 ServerProvider
     // Load environment (fat, fws, uat, prod ...) and dc, from /opt/settings/server.properties, JVM property and/or OS
     // environment variables.
     Provider serverProvider = new DefaultServerProvider();
@@ -33,6 +44,11 @@ public class DefaultProviderManager implements ProviderManager {
     register(serverProvider);
   }
 
+  /**
+   * 注册 provider
+   *
+   * @param provider
+   */
   public synchronized void register(Provider provider) {
     m_providers.put(provider.getType(), provider);
   }
