@@ -1,6 +1,8 @@
 package com.ctrip.framework.apollo.enums;
 
 /**
+ * 配置来源：远程、本地、失败
+ *
  * To indicate the config's source type, i.e. where is the config loaded from
  *
  * @since 1.1.0
