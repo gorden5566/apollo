@@ -10,21 +10,43 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 线程工厂
+ */
 public class ApolloThreadFactory implements ThreadFactory {
   private static Logger log = LoggerFactory.getLogger(ApolloThreadFactory.class);
 
+  /**
+   * 线程序号
+   */
   private final AtomicLong threadNumber = new AtomicLong(1);
 
+  /**
+   * 线程前缀
+   */
   private final String namePrefix;
 
+  /**
+   * 是否为 daemon 线程
+   */
   private final boolean daemon;
 
+  /**
+   * 线程组
+   */
   private static final ThreadGroup threadGroup = new ThreadGroup("Apollo");
 
   public static ThreadGroup getThreadGroup() {
     return threadGroup;
   }
 
+  /**
+   * 创建线程工厂
+   *
+   * @param namePrefix 线程前缀
+   * @param daemon 是否为daemon线程
+   * @return
+   */
   public static ThreadFactory create(String namePrefix, boolean daemon) {
     return new ApolloThreadFactory(namePrefix, daemon);
   }
@@ -61,7 +83,7 @@ public class ApolloThreadFactory implements ThreadFactory {
     return false;
   }
 
-  private static interface ClassifyStandard<T> {
+  private interface ClassifyStandard<T> {
     boolean satisfy(T thread);
   }
 
@@ -81,10 +103,14 @@ public class ApolloThreadFactory implements ThreadFactory {
     this.daemon = daemon;
   }
 
+  @Override
   public Thread newThread(Runnable runnable) {
+    // 线程名字：线程组名字(Apollo) + 线程前缀 + 自增序号
     Thread thread = new Thread(threadGroup, runnable,//
         threadGroup.getName() + "-" + namePrefix + "-" + threadNumber.getAndIncrement());
     thread.setDaemon(daemon);
+
+    // 默认优先级
     if (thread.getPriority() != Thread.NORM_PRIORITY) {
       thread.setPriority(Thread.NORM_PRIORITY);
     }
