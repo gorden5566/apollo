@@ -3,6 +3,8 @@ package com.ctrip.framework.apollo.core.enums;
 import com.ctrip.framework.apollo.core.utils.StringUtils;
 
 /**
+ * 配置文件格式
+ *
  * @author Jason Song(song_s@ctrip.com)
  */
 public enum ConfigFileFormat {
