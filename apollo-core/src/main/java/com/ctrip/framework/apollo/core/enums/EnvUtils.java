@@ -2,6 +2,9 @@ package com.ctrip.framework.apollo.core.enums;
 
 import com.ctrip.framework.apollo.core.utils.StringUtils;
 
+/**
+ * 环境转换工具
+ */
 public final class EnvUtils {
   
   public static Env transformEnv(String envName) {
