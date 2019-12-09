@@ -15,8 +15,17 @@ import com.google.common.collect.Lists;
  */
 public abstract class AbstractConfigRepository implements ConfigRepository {
   private static final Logger logger = LoggerFactory.getLogger(AbstractConfigRepository.class);
+
+  /**
+   * 监听器，使用 CopyOnWriteArrayList 避免同步
+   */
   private List<RepositoryChangeListener> m_listeners = Lists.newCopyOnWriteArrayList();
 
+  /**
+   * 同步配置数据
+   *
+   * @return
+   */
   protected boolean trySync() {
     try {
       sync();
@@ -30,6 +39,9 @@ public abstract class AbstractConfigRepository implements ConfigRepository {
     return false;
   }
 
+  /**
+   * 同步配置数据
+   */
   protected abstract void sync();
 
   @Override
@@ -44,6 +56,12 @@ public abstract class AbstractConfigRepository implements ConfigRepository {
     m_listeners.remove(listener);
   }
 
+  /**
+   * 通知仓库变更事件
+   *
+   * @param namespace
+   * @param newProperties
+   */
   protected void fireRepositoryChange(String namespace, Properties newProperties) {
     for (RepositoryChangeListener listener : m_listeners) {
       try {
