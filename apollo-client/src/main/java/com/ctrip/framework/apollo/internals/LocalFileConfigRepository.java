@@ -32,13 +32,40 @@ import com.google.common.base.Preconditions;
 public class LocalFileConfigRepository extends AbstractConfigRepository
     implements RepositoryChangeListener {
   private static final Logger logger = LoggerFactory.getLogger(LocalFileConfigRepository.class);
+
+  /**
+   * 本地缓存子目录
+   */
   private static final String CONFIG_DIR = "/config-cache";
+
+  /**
+   * namespace
+   */
   private final String m_namespace;
+
+  /**
+   * 本地缓存目录
+   */
   private File m_baseDir;
+
+  /**
+   * apollo 配置
+   */
   private final ConfigUtil m_configUtil;
+
+  /**
+   * 属性值
+   */
   private volatile Properties m_fileProperties;
+
+  /**
+   * 上游仓库
+   */
   private volatile ConfigRepository m_upstream;
 
+  /**
+   * 配置来源类型
+   */
   private volatile ConfigSourceType m_sourceType = ConfigSourceType.LOCAL;
 
   /**
@@ -52,34 +79,59 @@ public class LocalFileConfigRepository extends AbstractConfigRepository
 
   public LocalFileConfigRepository(String namespace, ConfigRepository upstream) {
     m_namespace = namespace;
+
     m_configUtil = ApolloInjector.getInstance(ConfigUtil.class);
+
+    // 设置本地缓存目录
     this.setLocalCacheDir(findLocalCacheDir(), false);
+
+    // 设置上游仓库
     this.setUpstreamRepository(upstream);
+
+    // 从上游仓库同步数据
     this.trySync();
   }
 
+  /**
+   * 设置本地缓存目录
+   *
+   * @param baseDir 缓存目录
+   * @param syncImmediately 是否立即同步
+   */
   void setLocalCacheDir(File baseDir, boolean syncImmediately) {
     m_baseDir = baseDir;
+
+    // 检查本地缓存目录
     this.checkLocalConfigCacheDir(m_baseDir);
+
+    // 立即同步
     if (syncImmediately) {
       this.trySync();
     }
   }
 
+  /**
+   * 获取本地缓存目录
+   *
+   * @return
+   */
   private File findLocalCacheDir() {
     try {
       String defaultCacheDir = m_configUtil.getDefaultLocalCacheDir();
       Path path = Paths.get(defaultCacheDir);
       if (!Files.exists(path)) {
+        // 创建缓存目录
         Files.createDirectories(path);
       }
       if (Files.exists(path) && Files.isWritable(path)) {
+        // 默认缓存目录下的 config-cache 目录
         return new File(defaultCacheDir, CONFIG_DIR);
       }
     } catch (Throwable ex) {
       //ignore
     }
 
+    // 使用 class path 下的 config-cache 目录
     return new File(ClassLoaderUtil.getClassPath(), CONFIG_DIR);
   }
 
@@ -100,10 +152,15 @@ public class LocalFileConfigRepository extends AbstractConfigRepository
     }
     //clear previous listener
     if (m_upstream != null) {
+      // 清除 listener
       m_upstream.removeChangeListener(this);
     }
     m_upstream = upstreamConfigRepository;
+
+    // 从 upstream 同步
     trySyncFromUpstream();
+
+    // 添加 listener
     upstreamConfigRepository.addChangeListener(this);
   }
 
@@ -117,9 +174,15 @@ public class LocalFileConfigRepository extends AbstractConfigRepository
     if (newProperties.equals(m_fileProperties)) {
       return;
     }
+
+    // 所有属性配置
     Properties newFileProperties = new Properties();
     newFileProperties.putAll(newProperties);
+
+    // 更新文件缓存
     updateFileProperties(newFileProperties, m_upstream.getSourceType());
+
+    // 通知仓库变更事件
     this.fireRepositoryChange(namespace, newProperties);
   }
 
@@ -128,6 +191,7 @@ public class LocalFileConfigRepository extends AbstractConfigRepository
     //sync with upstream immediately
     boolean syncFromUpstreamResultSuccess = trySyncFromUpstream();
 
+    // 同步成功
     if (syncFromUpstreamResultSuccess) {
       return;
     }
@@ -136,8 +200,11 @@ public class LocalFileConfigRepository extends AbstractConfigRepository
     Throwable exception = null;
     try {
       transaction.addData("Basedir", m_baseDir.getAbsolutePath());
+
+      // 从本地读取文件
       m_fileProperties = this.loadFromLocalCacheFile(m_baseDir, m_namespace);
       m_sourceType = ConfigSourceType.LOCAL;
+
       transaction.setStatus(Transaction.SUCCESS);
     } catch (Throwable ex) {
       Tracer.logEvent("ApolloConfigException", ExceptionUtil.getDetailMessage(ex));
@@ -155,6 +222,11 @@ public class LocalFileConfigRepository extends AbstractConfigRepository
     }
   }
 
+  /**
+   * 从上游仓库同步
+   *
+   * @return
+   */
   private boolean trySyncFromUpstream() {
     if (m_upstream == null) {
       return false;
@@ -171,15 +243,31 @@ public class LocalFileConfigRepository extends AbstractConfigRepository
     return false;
   }
 
+  /**
+   * 更新文件中的属性值
+   *
+   * @param newProperties
+   * @param sourceType
+   */
   private synchronized void updateFileProperties(Properties newProperties, ConfigSourceType sourceType) {
     this.m_sourceType = sourceType;
     if (newProperties.equals(m_fileProperties)) {
       return;
     }
     this.m_fileProperties = newProperties;
+
+    // 持久化到本地文件
     persistLocalCacheFile(m_baseDir, m_namespace);
   }
 
+  /**
+   * 从本地缓存读取属性值
+   *
+   * @param baseDir
+   * @param namespace
+   * @return
+   * @throws IOException
+   */
   private Properties loadFromLocalCacheFile(File baseDir, String namespace) throws IOException {
     Preconditions.checkNotNull(baseDir, "Basedir cannot be null");
 
@@ -216,6 +304,12 @@ public class LocalFileConfigRepository extends AbstractConfigRepository
     return properties;
   }
 
+  /**
+   * 持久化本地缓存文件
+   *
+   * @param baseDir
+   * @param namespace
+   */
   void persistLocalCacheFile(File baseDir, String namespace) {
     if (baseDir == null) {
       return;
@@ -224,17 +318,24 @@ public class LocalFileConfigRepository extends AbstractConfigRepository
 
     OutputStream out = null;
 
+    // 事务监控
     Transaction transaction = Tracer.newTransaction("Apollo.ConfigService", "persistLocalConfigFile");
     transaction.addData("LocalConfigFile", file.getAbsolutePath());
     try {
       out = new FileOutputStream(file);
       m_fileProperties.store(out, "Persisted by DefaultConfig");
+
+      // 事务状态为成功
       transaction.setStatus(Transaction.SUCCESS);
     } catch (IOException ex) {
       ApolloConfigException exception =
           new ApolloConfigException(
               String.format("Persist local cache file %s failed", file.getAbsolutePath()), ex);
+
+      // error 埋点
       Tracer.logError(exception);
+
+      // 事务状态为异常
       transaction.setStatus(exception);
       logger.warn("Persist local cache file {} failed, reason: {}.", file.getAbsolutePath(),
           ExceptionUtil.getDetailMessage(ex));
@@ -246,18 +347,22 @@ public class LocalFileConfigRepository extends AbstractConfigRepository
           //ignore
         }
       }
+      // 事务结束
       transaction.complete();
     }
   }
 
   private void checkLocalConfigCacheDir(File baseDir) {
+    // 目录已存在
     if (baseDir.exists()) {
       return;
     }
     Transaction transaction = Tracer.newTransaction("Apollo.ConfigService", "createLocalConfigDir");
     transaction.addData("BaseDir", baseDir.getAbsolutePath());
     try {
+      // 创建本地缓存目录
       Files.createDirectory(baseDir.toPath());
+
       transaction.setStatus(Transaction.SUCCESS);
     } catch (IOException ex) {
       ApolloConfigException exception =
@@ -274,6 +379,13 @@ public class LocalFileConfigRepository extends AbstractConfigRepository
     }
   }
 
+  /**
+   * 组装缓存文件名
+   *
+   * @param baseDir
+   * @param namespace
+   * @return
+   */
   File assembleLocalCacheFile(File baseDir, String namespace) {
     String fileName =
         String.format("%s.properties", Joiner.on(ConfigConsts.CLUSTER_NAMESPACE_SEPARATOR)
