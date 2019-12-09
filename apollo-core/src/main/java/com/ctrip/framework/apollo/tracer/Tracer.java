@@ -14,15 +14,25 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class Tracer {
   private static final Logger logger = LoggerFactory.getLogger(Tracer.class);
+
+  /**
+   * 空的 MessageProducer 工厂实现
+   */
   private static final MessageProducerManager NULL_MESSAGE_PRODUCER_MANAGER =
       new NullMessageProducerManager();
   private static volatile MessageProducerManager producerManager;
   private static Object lock = new Object();
 
   static {
+    // 类加载时初始化
     getProducer();
   }
 
+  /**
+   * 获取 MessageProducer
+   *
+   * @return
+   */
   private static MessageProducer getProducer() {
     try {
       if (producerManager == null) {
