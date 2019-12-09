@@ -14,7 +14,14 @@ import java.net.URLDecoder;
 public class ClassLoaderUtil {
   private static final Logger logger = LoggerFactory.getLogger(ClassLoaderUtil.class);
 
+  /**
+   * 线程上下文类加载器
+   */
   private static ClassLoader loader = Thread.currentThread().getContextClassLoader();
+
+  /**
+   * class path
+   */
   private static String classPath = "";
 
   static {
@@ -50,6 +57,12 @@ public class ClassLoaderUtil {
     return classPath;
   }
 
+  /**
+   * 判断类是否存在
+   *
+   * @param className
+   * @return
+   */
   public static boolean isClassPresent(String className) {
     try {
       Class.forName(className);
