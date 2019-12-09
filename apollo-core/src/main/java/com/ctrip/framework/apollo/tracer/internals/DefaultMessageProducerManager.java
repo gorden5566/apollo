@@ -7,6 +7,8 @@ import com.ctrip.framework.apollo.tracer.spi.MessageProducer;
 import com.ctrip.framework.apollo.tracer.spi.MessageProducerManager;
 
 /**
+ * 默认的 MessageProducer 工厂
+ *
  * @author Jason Song(song_s@ctrip.com)
  */
 public class DefaultMessageProducerManager implements MessageProducerManager {
