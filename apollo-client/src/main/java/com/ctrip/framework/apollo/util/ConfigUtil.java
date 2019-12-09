@@ -105,8 +105,10 @@ public class ConfigUtil {
    * @return the app id or ConfigConsts.NO_APPID_PLACEHOLDER if app id is not available
    */
   public String getAppId() {
+    // 加载 AppId
     String appId = Foundation.app().getAppId();
     if (Strings.isNullOrEmpty(appId)) {
+      // 未取到则设置为默认值
       appId = ConfigConsts.NO_APPID_PLACEHOLDER;
       if (warnLogRateLimiter.tryAcquire()) {
         logger.warn(
@@ -125,6 +127,9 @@ public class ConfigUtil {
     return Foundation.server().getDataCenter();
   }
 
+  /**
+   * 初始化集群
+   */
   private void initCluster() {
     //Load data center from system property
     cluster = System.getProperty(ConfigConsts.APOLLO_CLUSTER_KEY);
