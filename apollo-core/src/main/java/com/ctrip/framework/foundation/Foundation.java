@@ -20,6 +20,11 @@ public abstract class Foundation {
     getManager();
   }
 
+  /**
+   * 获取 Provider 管理工厂
+   *
+   * @return
+   */
   private static ProviderManager getManager() {
     try {
       if (s_manager == null) {
@@ -39,6 +44,13 @@ public abstract class Foundation {
     }
   }
 
+  /**
+   * 从所有 Provider 中获取属性值
+   *
+   * @param name
+   * @param defaultValue
+   * @return
+   */
   public static String getProperty(String name, String defaultValue) {
     try {
       return getManager().getProperty(name, defaultValue);
@@ -48,6 +60,11 @@ public abstract class Foundation {
     }
   }
 
+  /**
+   * 获取 NetworkProvider
+   *
+   * @return
+   */
   public static NetworkProvider net() {
     try {
       return getManager().provider(NetworkProvider.class);
@@ -57,6 +74,11 @@ public abstract class Foundation {
     }
   }
 
+  /**
+   * 获取 ServerProvider
+   *
+   * @return
+   */
   public static ServerProvider server() {
     try {
       return getManager().provider(ServerProvider.class);
@@ -66,6 +88,11 @@ public abstract class Foundation {
     }
   }
 
+  /**
+   * 获取 ApplicationProvider
+   *
+   * @return
+   */
   public static ApplicationProvider app() {
     try {
       return getManager().provider(ApplicationProvider.class);
