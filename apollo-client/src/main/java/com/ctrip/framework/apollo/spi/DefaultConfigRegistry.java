@@ -12,6 +12,11 @@ import com.google.common.collect.Maps;
  */
 public class DefaultConfigRegistry implements ConfigRegistry {
   private static final Logger s_logger = LoggerFactory.getLogger(DefaultConfigRegistry.class);
+
+  /**
+   * key: namespace
+   * value: ConfigFactory 实例
+   */
   private Map<String, ConfigFactory> m_instances = Maps.newConcurrentMap();
 
   @Override
