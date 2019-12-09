@@ -6,14 +6,40 @@ import com.ctrip.framework.apollo.tracer.spi.Transaction;
 import java.lang.reflect.Method;
 
 /**
+ * Cat MessageProducer
+ *
  * @author Jason Song(song_s@ctrip.com)
  */
 public class CatMessageProducer implements MessageProducer {
+  /**
+   * cat 启动类
+   * com.dianping.cat.Cat
+   */
   private static Class CAT_CLASS;
+
+  /**
+   * public static void logError(Throwable cause)
+   */
   private static Method LOG_ERROR_WITH_CAUSE;
+
+  /**
+   * public static void logError(String message, Throwable cause)
+   */
   private static Method LOG_ERROR_WITH_MESSAGE_AND_CAUSE;
+
+  /**
+   * public static void logEvent(String type, String name)
+   */
   private static Method LOG_EVENT_WITH_TYPE_AND_NAME;
+
+  /**
+   * public static void logEvent(String type, String name, String status, String nameValuePairs)
+   */
   private static Method LOG_EVENT_WITH_TYPE_AND_NAME_AND_STATUS_AND_NAME_VALUE_PAIRS;
+
+  /**
+   * public static Transaction newTransaction(String type, String name)
+   */
   private static Method NEW_TRANSACTION_WITH_TYPE_AND_NAME;
 
   static {
