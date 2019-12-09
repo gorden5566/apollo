@@ -8,16 +8,33 @@ import com.ctrip.framework.apollo.spi.ConfigFactory;
 import com.ctrip.framework.apollo.spi.ConfigRegistry;
 
 /**
+ * 客户端获取配置的入口
+ *
  * Entry point for client config use
  *
  * @author Jason Song(song_s@ctrip.com)
  */
 public class ConfigService {
+  /**
+   * ConfigService 单例
+   */
   private static final ConfigService s_instance = new ConfigService();
 
+  /**
+   * Config 管理工厂
+   */
   private volatile ConfigManager m_configManager;
+
+  /**
+   * ConfigFactory 注册中心
+   */
   private volatile ConfigRegistry m_configRegistry;
 
+  /**
+   * 获取 Config 管理工厂
+   *
+   * @return
+   */
   private ConfigManager getManager() {
     if (m_configManager == null) {
       synchronized (this) {
@@ -30,6 +47,11 @@ public class ConfigService {
     return m_configManager;
   }
 
+  /**
+   * 获取 ConfigFactory 注册中心
+   *
+   * @return
+   */
   private ConfigRegistry getRegistry() {
     if (m_configRegistry == null) {
       synchronized (this) {
@@ -43,6 +65,8 @@ public class ConfigService {
   }
 
   /**
+   * 获取 application namespace 的配置
+   *
    * Get Application's config instance.
    *
    * @return config instance
@@ -52,6 +76,8 @@ public class ConfigService {
   }
 
   /**
+   * 根据 namespace 获取配置
+   *
    * Get the config instance for the namespace.
    *
    * @param namespace the namespace of the config
@@ -61,15 +87,29 @@ public class ConfigService {
     return s_instance.getManager().getConfig(namespace);
   }
 
+  /**
+   * 根据 namespace 和文件格式获取配置文件
+   *
+   * @param namespace
+   * @param configFileFormat
+   * @return
+   */
   public static ConfigFile getConfigFile(String namespace, ConfigFileFormat configFileFormat) {
     return s_instance.getManager().getConfigFile(namespace, configFileFormat);
   }
 
+  /**
+   * 设置 application 的配置实例
+   *
+   * @param config
+   */
   static void setConfig(Config config) {
     setConfig(ConfigConsts.NAMESPACE_APPLICATION, config);
   }
 
   /**
+   * 根据 namespace 设置配置实例
+   *
    * Manually set the config for the namespace specified, use with caution.
    *
    * @param namespace the namespace
@@ -90,11 +130,18 @@ public class ConfigService {
     });
   }
 
+  /**
+   * 注册 application 的 ConfigFactory
+   *
+   * @param factory
+   */
   static void setConfigFactory(ConfigFactory factory) {
     setConfigFactory(ConfigConsts.NAMESPACE_APPLICATION, factory);
   }
 
   /**
+   * 往 ConfigRegistry 中注册 namespace 对应的 ConfigFactory
+   *
    * Manually set the config factory for the namespace specified, use with caution.
    *
    * @param namespace the namespace
