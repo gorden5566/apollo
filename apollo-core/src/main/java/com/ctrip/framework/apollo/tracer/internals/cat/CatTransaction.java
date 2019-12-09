@@ -5,13 +5,34 @@ import com.ctrip.framework.apollo.tracer.spi.Transaction;
 import java.lang.reflect.Method;
 
 /**
+ * Cat Transaction 监控
+ *
  * @author Jason Song(song_s@ctrip.com)
  */
 public class CatTransaction implements Transaction {
+  /**
+   * com.dianping.cat.message.Transaction
+   */
   private static Class CAT_TRANSACTION_CLASS;
+
+  /**
+   * public void setStatus(String status)
+   */
   private static Method SET_STATUS_WITH_STRING;
+
+  /**
+   * public void setStatus(Throwable e)
+   */
   private static Method SET_STATUS_WITH_THROWABLE;
+
+  /**
+   * public void addData(String key, Object value)
+   */
   private static Method ADD_DATA_WITH_KEY_AND_VALUE;
+
+  /**
+   * public void complete()
+   */
   private static Method COMPLETE;
 
   private Object catTransaction;
