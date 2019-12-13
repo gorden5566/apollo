@@ -41,10 +41,31 @@ public abstract class AbstractConfig implements Config {
 
   private static final ExecutorService m_executorService;
 
+  /**
+   * 配置变更监听器
+   */
   private final List<ConfigChangeListener> m_listeners = Lists.newCopyOnWriteArrayList();
+
+  /**
+   * key: 配置变更监听器
+   * value: 感兴趣的 key 集合
+   */
   private final Map<ConfigChangeListener, Set<String>> m_interestedKeys = Maps.newConcurrentMap();
+
+  /**
+   * key: 配置变更监听器
+   * value: 感兴趣的 key 前缀集合
+   */
   private final Map<ConfigChangeListener, Set<String>> m_interestedKeyPrefixes = Maps.newConcurrentMap();
+
+  /**
+   * ConfigUtil
+   */
   private final ConfigUtil m_configUtil;
+
+  /**
+   * 各种类型的缓存
+   */
   private volatile Cache<String, Integer> m_integerCache;
   private volatile Cache<String, Long> m_longCache;
   private volatile Cache<String, Short> m_shortCache;
@@ -55,10 +76,21 @@ public abstract class AbstractConfig implements Config {
   private volatile Cache<String, Date> m_dateCache;
   private volatile Cache<String, Long> m_durationCache;
   private final Map<String, Cache<String, String[]>> m_arrayCache;
+
+  /**
+   * 全部的缓存，保存上面各种类型的缓存
+   */
   private final List<Cache> allCaches;
-  private final AtomicLong m_configVersion; //indicate config version
+
+  /**
+   * 配置的版本号
+   *
+   * indicate config version
+   */
+  private final AtomicLong m_configVersion;
 
   static {
+    // 创建线程池，线程前缀为 Config
     m_executorService = Executors.newCachedThreadPool(ApolloThreadFactory
         .create("Config", true));
   }
@@ -84,9 +116,13 @@ public abstract class AbstractConfig implements Config {
   public void addChangeListener(ConfigChangeListener listener, Set<String> interestedKeys, Set<String> interestedKeyPrefixes) {
     if (!m_listeners.contains(listener)) {
       m_listeners.add(listener);
+
+      // 注册感兴趣的 key 列表
       if (interestedKeys != null && !interestedKeys.isEmpty()) {
         m_interestedKeys.put(listener, Sets.newHashSet(interestedKeys));
       }
+
+      // 注册感兴趣的 key 前缀列表
       if (interestedKeyPrefixes != null && !interestedKeyPrefixes.isEmpty()) {
         m_interestedKeyPrefixes.put(listener, Sets.newHashSet(interestedKeyPrefixes));
       }
@@ -381,7 +417,18 @@ public abstract class AbstractConfig implements Config {
     return defaultValue;
   }
 
+  /**
+   * 从缓存中获取值
+   *
+   * @param key 配置的 key
+   * @param parser 解析器
+   * @param cache 缓存
+   * @param defaultValue 默认值
+   * @param <T> 待处理的类型
+   * @return
+   */
   private <T> T getValueFromCache(String key, Function<String, T> parser, Cache<String, T> cache, T defaultValue) {
+    // 优先从缓存获取
     T result = cache.getIfPresent(key);
 
     if (result != null) {
@@ -391,26 +438,51 @@ public abstract class AbstractConfig implements Config {
     return getValueAndStoreToCache(key, parser, cache, defaultValue);
   }
 
+  /**
+   * 获取值并保存到缓存中
+   *
+   * @param key
+   * @param parser
+   * @param cache
+   * @param defaultValue
+   * @param <T>
+   * @return
+   */
   private <T> T getValueAndStoreToCache(String key, Function<String, T> parser, Cache<String, T> cache, T defaultValue) {
+    // 当前的版本
     long currentConfigVersion = m_configVersion.get();
+
+    // 获取配置的值
     String value = getProperty(key, null);
 
     if (value != null) {
+      // 解析
       T result = parser.apply(value);
 
       if (result != null) {
         synchronized (this) {
+          // 版本未变化则放入缓存
+          // 否则，当前值为旧值，无需放入缓存
           if (m_configVersion.get() == currentConfigVersion) {
             cache.put(key, result);
           }
         }
+
+        // 返回结果，不一定是最新的值
         return result;
       }
     }
 
+    // 未取到则返回默认值
     return defaultValue;
   }
 
+  /**
+   * 新建缓存
+   *
+   * @param <T>
+   * @return
+   */
   private <T> Cache<String, T> newCache() {
     Cache<String, T> cache = CacheBuilder.newBuilder()
         .maximumSize(m_configUtil.getMaxConfigCacheSize())
@@ -421,6 +493,8 @@ public abstract class AbstractConfig implements Config {
   }
 
   /**
+   * 清除配置缓存
+   *
    * Clear config cache
    */
   protected void clearConfigCache() {
