@@ -4,14 +4,35 @@ package com.ctrip.framework.apollo.model;
 import com.ctrip.framework.apollo.enums.PropertyChangeType;
 
 /**
+ * 配置变更
+ *
  * Holds the information for a config change.
  * @author Jason Song(song_s@ctrip.com)
  */
 public class ConfigChange {
+  /**
+   * namespace
+   */
   private final String namespace;
+
+  /**
+   * 属性名
+   */
   private final String propertyName;
+
+  /**
+   * 旧值
+   */
   private String oldValue;
+
+  /**
+   * 新值
+   */
   private String newValue;
+
+  /**
+   * 变更类型
+   */
   private PropertyChangeType changeType;
 
   /**
