@@ -3,6 +3,8 @@ package com.ctrip.framework.apollo;
 import com.ctrip.framework.apollo.model.ConfigFileChangeEvent;
 
 /**
+ * 配置文件变更事件监听器
+ *
  * @author Jason Song(song_s@ctrip.com)
  */
 public interface ConfigFileChangeListener {
