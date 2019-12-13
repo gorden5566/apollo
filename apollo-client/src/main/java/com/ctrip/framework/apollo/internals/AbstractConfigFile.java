@@ -25,10 +25,30 @@ import com.google.common.collect.Lists;
  */
 public abstract class AbstractConfigFile implements ConfigFile, RepositoryChangeListener {
   private static final Logger logger = LoggerFactory.getLogger(AbstractConfigFile.class);
+
+  /**
+   * 线程池
+   */
   private static ExecutorService m_executorService;
+
+  /**
+   * 配置仓库
+   */
   protected final ConfigRepository m_configRepository;
+
+  /**
+   * namespace
+   */
   protected final String m_namespace;
+
+  /**
+   * properties
+   */
   protected final AtomicReference<Properties> m_configProperties;
+
+  /**
+   * listeners
+   */
   private final List<ConfigFileChangeListener> m_listeners = Lists.newCopyOnWriteArrayList();
 
   private volatile ConfigSourceType m_sourceType = ConfigSourceType.NONE;
@@ -45,6 +65,9 @@ public abstract class AbstractConfigFile implements ConfigFile, RepositoryChange
     initialize();
   }
 
+  /**
+   * 初始化
+   */
   private void initialize() {
     try {
       m_configProperties.set(m_configRepository.getConfig());
@@ -65,25 +88,37 @@ public abstract class AbstractConfigFile implements ConfigFile, RepositoryChange
     return m_namespace;
   }
 
+  /**
+   * 更新属性值
+   *
+   * @param newProperties
+   */
   protected abstract void update(Properties newProperties);
 
   @Override
   public synchronized void onRepositoryChange(String namespace, Properties newProperties) {
+    // 无变化直接返回
     if (newProperties.equals(m_configProperties.get())) {
       return;
     }
+
+    // 新配置值
     Properties newConfigProperties = new Properties();
     newConfigProperties.putAll(newProperties);
 
+    // 原文件内容
     String oldValue = getContent();
 
+    // 更新
     update(newProperties);
     m_sourceType = m_configRepository.getSourceType();
 
+    // 新文件内容
     String newValue = getContent();
 
     PropertyChangeType changeType = PropertyChangeType.MODIFIED;
 
+    // 变更类型
     if (oldValue == null) {
       changeType = PropertyChangeType.ADDED;
     } else if (newValue == null) {
@@ -112,6 +147,11 @@ public abstract class AbstractConfigFile implements ConfigFile, RepositoryChange
     return m_sourceType;
   }
 
+  /**
+   * 在专用的线程池里处理事件变更
+   *
+   * @param changeEvent
+   */
   private void fireConfigChange(final ConfigFileChangeEvent changeEvent) {
     for (final ConfigFileChangeListener listener : m_listeners) {
       m_executorService.submit(new Runnable() {

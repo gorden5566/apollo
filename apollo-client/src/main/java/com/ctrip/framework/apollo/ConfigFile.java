@@ -4,6 +4,8 @@ import com.ctrip.framework.apollo.core.enums.ConfigFileFormat;
 import com.ctrip.framework.apollo.enums.ConfigSourceType;
 
 /**
+ * 配置文件接口
+ *
  * @author Jason Song(song_s@ctrip.com)
  */
 public interface ConfigFile {
@@ -44,12 +46,12 @@ public interface ConfigFile {
    * @param listener the specific config change listener to remove
    * @return true if the specific config change listener is found and removed
    */
-  public boolean removeChangeListener(ConfigFileChangeListener listener);
+  boolean removeChangeListener(ConfigFileChangeListener listener);
 
   /**
    * Return the config's source type, i.e. where is the config loaded from
    *
    * @return the config's source type
    */
-  public ConfigSourceType getSourceType();
+  ConfigSourceType getSourceType();
 }
