@@ -9,6 +9,8 @@ import java.util.Properties;
  */
 public class PropertiesUtil {
   /**
+   * 把Properties转换为String
+   *
    * Transform the properties to string format
    * @param properties the properties object
    * @return the string containing the properties
@@ -23,6 +25,8 @@ public class PropertiesUtil {
   }
 
   /**
+   * 过滤掉注释行
+   *
    * filter out the first comment line
    * @param stringBuffer the string buffer
    * @return true if filtered successfully, false otherwise
