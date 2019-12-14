@@ -22,9 +22,25 @@ import com.google.common.collect.Maps;
  */
 public class SimpleConfig extends AbstractConfig implements RepositoryChangeListener {
   private static final Logger logger = LoggerFactory.getLogger(SimpleConfig.class);
+
+  /**
+   * namespace
+   */
   private final String m_namespace;
+
+  /**
+   * 配置仓库
+   */
   private final ConfigRepository m_configRepository;
+
+  /**
+   * Properties
+   */
   private volatile Properties m_configProperties;
+
+  /**
+   * 配置来源，即仓库类型
+   */
   private volatile ConfigSourceType m_sourceType = ConfigSourceType.NONE;
 
   /**
@@ -78,13 +94,19 @@ public class SimpleConfig extends AbstractConfig implements RepositoryChangeList
 
   @Override
   public synchronized void onRepositoryChange(String namespace, Properties newProperties) {
+    // 配置未变更
     if (newProperties.equals(m_configProperties)) {
       return;
     }
+
+    // 复制一份
     Properties newConfigProperties = new Properties();
     newConfigProperties.putAll(newProperties);
 
+    // 计算变更
     List<ConfigChange> changes = calcPropertyChanges(namespace, m_configProperties, newConfigProperties);
+
+    // 转换为map，key为propertyName
     Map<String, ConfigChange> changeMap = Maps.uniqueIndex(changes,
         new Function<ConfigChange, String>() {
           @Override
@@ -93,9 +115,13 @@ public class SimpleConfig extends AbstractConfig implements RepositoryChangeList
           }
         });
 
+    // 更新配置
     updateConfig(newConfigProperties, m_configRepository.getSourceType());
+
+    // 清空配置缓存
     clearConfigCache();
 
+    // 通知变更事件
     this.fireConfigChange(new ConfigChangeEvent(m_namespace, changeMap));
 
     Tracer.logEvent("Apollo.Client.ConfigChanges", m_namespace);
