@@ -4,8 +4,19 @@ package com.ctrip.framework.apollo.util.http;
  * @author Jason Song(song_s@ctrip.com)
  */
 public class HttpRequest {
+  /**
+   * url
+   */
   private String m_url;
+
+  /**
+   * 连接超时时间
+   */
   private int m_connectTimeout;
+
+  /**
+   * 读取超时时间
+   */
   private int m_readTimeout;
 
   /**
