@@ -17,6 +17,8 @@ public abstract class PlainTextConfigFile extends AbstractConfigFile {
     if (!this.hasContent()) {
       return null;
     }
+
+    // key 为 content
     return m_configProperties.get().getProperty(ConfigConsts.CONFIG_FILE_CONTENT_KEY);
   }
 
