@@ -33,12 +33,40 @@ import com.google.gson.reflect.TypeToken;
 
 public class ConfigServiceLocator {
   private static final Logger logger = LoggerFactory.getLogger(ConfigServiceLocator.class);
+
+  /**
+   * http util
+   */
   private HttpUtil m_httpUtil;
+
+  /**
+   * config util
+   */
   private ConfigUtil m_configUtil;
+
+  /**
+   * service
+   */
   private AtomicReference<List<ServiceDTO>> m_configServices;
+
+  /**
+   * 响应类型
+   */
   private Type m_responseType;
+
+  /**
+   * 周期调度线程池
+   */
   private ScheduledExecutorService m_executorService;
+
+  /**
+   * map joiner
+   */
   private static final Joiner.MapJoiner MAP_JOINER = Joiner.on("&").withKeyValueSeparator("=");
+
+  /**
+   * param escaper
+   */
   private static final Escaper queryParamEscaper = UrlEscapers.urlFormParameterEscaper();
 
   /**
@@ -56,6 +84,9 @@ public class ConfigServiceLocator {
     initConfigServices();
   }
 
+  /**
+   * 初始化 config service
+   */
   private void initConfigServices() {
     // get from run time configurations
     List<ServiceDTO> customizedConfigServices = getCustomizedConfigService();
@@ -70,6 +101,11 @@ public class ConfigServiceLocator {
     this.schedulePeriodicRefresh();
   }
 
+  /**
+   * 获取自定义的 config service
+   *
+   * @return
+   */
   private List<ServiceDTO> getCustomizedConfigService() {
     // 1. Get from System Property
     String configServices = System.getProperty("apollo.configService");
@@ -127,6 +163,9 @@ public class ConfigServiceLocator {
     return false;
   }
 
+  /**
+   * 周期调度更新
+   */
   private void schedulePeriodicRefresh() {
     this.m_executorService.scheduleAtFixedRate(
         new Runnable() {
@@ -140,6 +179,9 @@ public class ConfigServiceLocator {
         m_configUtil.getRefreshIntervalTimeUnit());
   }
 
+  /**
+   * 更新 config service
+   */
   private synchronized void updateConfigServices() {
     String url = assembleMetaServiceUrl();
 
@@ -151,14 +193,21 @@ public class ConfigServiceLocator {
       Transaction transaction = Tracer.newTransaction("Apollo.MetaService", "getConfigService");
       transaction.addData("Url", url);
       try {
+        // 从meta service 获取 service
         HttpResponse<List<ServiceDTO>> response = m_httpUtil.doGet(request, m_responseType);
         transaction.setStatus(Transaction.SUCCESS);
+
+        // 处理结果
         List<ServiceDTO> services = response.getBody();
         if (services == null || services.isEmpty()) {
           logConfigService("Empty response!");
           continue;
         }
+
+        // 设置config service
         setConfigServices(services);
+
+        // 成功则返回
         return;
       } catch (Throwable ex) {
         Tracer.logEvent("ApolloConfigException", ExceptionUtil.getDetailMessage(ex));
@@ -169,6 +218,7 @@ public class ConfigServiceLocator {
       }
 
       try {
+        // 失败时等待
         m_configUtil.getOnErrorRetryIntervalTimeUnit().sleep(m_configUtil.getOnErrorRetryInterval());
       } catch (InterruptedException ex) {
         //ignore
@@ -179,11 +229,21 @@ public class ConfigServiceLocator {
         String.format("Get config services failed from %s", url), exception);
   }
 
+  /**
+   * 设置 config service
+   *
+   * @param services
+   */
   private void setConfigServices(List<ServiceDTO> services) {
     m_configServices.set(services);
     logConfigServices(services);
   }
 
+  /**
+   * 组装 meta service url
+   *
+   * @return
+   */
   private String assembleMetaServiceUrl() {
     String domainName = m_configUtil.getMetaServerDomainName();
     String appId = m_configUtil.getAppId();
@@ -198,6 +258,11 @@ public class ConfigServiceLocator {
     return domainName + "/services/config?" + MAP_JOINER.join(queryParams);
   }
 
+  /**
+   * 记录日志
+   *
+   * @param serviceDtos
+   */
   private void logConfigServices(List<ServiceDTO> serviceDtos) {
     for (ServiceDTO serviceDto : serviceDtos) {
       logConfigService(serviceDto.getHomepageUrl());
