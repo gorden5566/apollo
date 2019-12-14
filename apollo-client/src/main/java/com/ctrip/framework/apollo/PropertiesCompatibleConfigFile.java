@@ -10,6 +10,8 @@ import java.util.Properties;
 public interface PropertiesCompatibleConfigFile extends ConfigFile {
 
   /**
+   * 转换为 Properties
+   *
    * @return the properties form of the config file
    *
    * @throws RuntimeException if the content could not be transformed to properties

@@ -8,9 +8,19 @@ import com.ctrip.framework.apollo.enums.ConfigSourceType;
 import com.ctrip.framework.apollo.model.ConfigFileChangeEvent;
 import com.google.common.base.Preconditions;
 
+/**
+ * 与Properties配置文件兼容的仓库类型
+ */
 public class PropertiesCompatibleFileConfigRepository extends AbstractConfigRepository implements
     ConfigFileChangeListener {
+  /**
+   * 兼容配置文件
+   */
   private final PropertiesCompatibleConfigFile configFile;
+
+  /**
+   * Properties缓存
+   */
   private volatile Properties cachedProperties;
 
   public PropertiesCompatibleFileConfigRepository(PropertiesCompatibleConfigFile configFile) {
