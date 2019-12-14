@@ -30,12 +30,35 @@ import com.google.common.util.concurrent.RateLimiter;
  */
 public class DefaultConfig extends AbstractConfig implements RepositoryChangeListener {
   private static final Logger logger = LoggerFactory.getLogger(DefaultConfig.class);
+
+  /**
+   * namespace
+   */
   private final String m_namespace;
+
+  /**
+   * resource properties
+   */
   private final Properties m_resourceProperties;
+
+  /**
+   * config properties
+   */
   private final AtomicReference<Properties> m_configProperties;
+
+  /**
+   * 配置仓库
+   */
   private final ConfigRepository m_configRepository;
+
+  /**
+   * warn log 输出速率控制
+   */
   private final RateLimiter m_warnLogRateLimiter;
 
+  /**
+   * 仓库类型
+   */
   private volatile ConfigSourceType m_sourceType = ConfigSourceType.NONE;
 
   /**
@@ -148,13 +171,27 @@ public class DefaultConfig extends AbstractConfig implements RepositoryChangeLis
     Tracer.logEvent("Apollo.Client.ConfigChanges", m_namespace);
   }
 
+  /**
+   * 更新配置
+   *
+   * @param newConfigProperties
+   * @param sourceType
+   */
   private void updateConfig(Properties newConfigProperties, ConfigSourceType sourceType) {
     m_configProperties.set(newConfigProperties);
     m_sourceType = sourceType;
   }
 
+  /**
+   * 重新计算变更类型
+   *
+   * @param newConfigProperties
+   * @param sourceType
+   * @return
+   */
   private Map<String, ConfigChange> updateAndCalcConfigChanges(Properties newConfigProperties,
       ConfigSourceType sourceType) {
+    // 计算配置变更
     List<ConfigChange> configChanges =
         calcPropertyChanges(m_namespace, m_configProperties.get(), newConfigProperties);
 
@@ -207,6 +244,12 @@ public class DefaultConfig extends AbstractConfig implements RepositoryChangeLis
     return actualChanges.build();
   }
 
+  /**
+   * 从 resource 里加载配置
+   *
+   * @param namespace
+   * @return
+   */
   private Properties loadFromResource(String namespace) {
     String name = String.format("META-INF/config/%s.properties", namespace);
     InputStream in = ClassLoaderUtil.getLoader().getResourceAsStream(name);
