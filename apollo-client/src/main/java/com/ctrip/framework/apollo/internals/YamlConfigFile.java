@@ -14,10 +14,16 @@ import com.ctrip.framework.apollo.tracer.Tracer;
 import com.ctrip.framework.apollo.util.yaml.YamlParser;
 
 /**
+ * yaml配置文件
+ *
  * @author Jason Song(song_s@ctrip.com)
  */
 public class YamlConfigFile extends PlainTextConfigFile implements PropertiesCompatibleConfigFile {
   private static final Logger logger = LoggerFactory.getLogger(YamlConfigFile.class);
+
+  /**
+   * Properties缓存
+   */
   private volatile Properties cachedProperties;
 
   public YamlConfigFile(String namespace, ConfigRepository configRepository) {
@@ -55,10 +61,18 @@ public class YamlConfigFile extends PlainTextConfigFile implements PropertiesCom
     return false;
   }
 
+  /**
+   * 将content转换为cachedProperties，更新cachedProperties
+   */
   private synchronized void transformToProperties() {
     cachedProperties = toProperties();
   }
 
+  /**
+   * 转换为Properties
+   *
+   * @return
+   */
   private Properties toProperties() {
     if (!this.hasContent()) {
       return new Properties();

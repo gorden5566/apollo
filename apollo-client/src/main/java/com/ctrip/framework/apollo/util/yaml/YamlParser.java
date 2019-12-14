@@ -18,6 +18,8 @@ import org.yaml.snakeyaml.parser.ParserException;
 import com.ctrip.framework.apollo.core.utils.StringUtils;
 
 /**
+ * Yaml解析器，移植自spring
+ *
  * Transplanted from org.springframework.beans.factory.config.YamlProcessor since apollo can't depend on Spring directly
  *
  * @since 1.3.0
@@ -26,6 +28,8 @@ public class YamlParser {
   private static final Logger logger = LoggerFactory.getLogger(YamlParser.class);
 
   /**
+   * 把yaml内容转换为properties
+   *
    * Transform yaml content to properties
    */
   public Properties yamlToProperties(String yamlContent) {
@@ -139,10 +143,23 @@ public class YamlParser {
     }
   }
 
+  /**
+   * Callback interface used to process the YAML parsing results.
+   */
   private interface MatchCallback {
+    /**
+     * Process the given representation of the parsing results.
+     *
+     * @param properties
+     * @param map
+     */
     void process(Properties properties, Map<String, Object> map);
   }
 
+  /**
+   * 自定义Constructor
+   * 解析yaml时，若存在重复key则抛异常
+   */
   private static class StrictMapAppenderConstructor extends Constructor {
 
     // Declared as public for use in subclasses
