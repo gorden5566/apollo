@@ -19,7 +19,14 @@ import java.nio.charset.StandardCharsets;
  * @author Jason Song(song_s@ctrip.com)
  */
 public class HttpUtil {
+  /**
+   * config util
+   */
   private ConfigUtil m_configUtil;
+
+  /**
+   * gson
+   */
   private Gson gson;
 
   /**
@@ -39,6 +46,7 @@ public class HttpUtil {
    * @throws ApolloConfigException if any error happened or response code is neither 200 nor 304
    */
   public <T> HttpResponse<T> doGet(HttpRequest httpRequest, final Class<T> responseType) {
+    // 响应结果转换
     Function<String, T> convertResponse = new Function<String, T>() {
       @Override
       public T apply(String input) {
@@ -74,15 +82,19 @@ public class HttpUtil {
     InputStreamReader esr = null;
     int statusCode;
     try {
+      // 创建连接
       HttpURLConnection conn = (HttpURLConnection) new URL(httpRequest.getUrl()).openConnection();
 
+      // 请求方式为 GET
       conn.setRequestMethod("GET");
 
+      // 设置连接超时时间
       int connectTimeout = httpRequest.getConnectTimeout();
       if (connectTimeout < 0) {
         connectTimeout = m_configUtil.getConnectTimeout();
       }
 
+      // 设置读超时时间
       int readTimeout = httpRequest.getReadTimeout();
       if (readTimeout < 0) {
         readTimeout = m_configUtil.getReadTimeout();
@@ -91,13 +103,16 @@ public class HttpUtil {
       conn.setConnectTimeout(connectTimeout);
       conn.setReadTimeout(readTimeout);
 
+      // 建立连接
       conn.connect();
 
+      // 响应状态码
       statusCode = conn.getResponseCode();
       String response;
 
       try {
         isr = new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8);
+        // 返回结果转换为string
         response = CharStreams.toString(isr);
       } catch (IOException ex) {
         /**
@@ -125,10 +140,12 @@ public class HttpUtil {
         }
       }
 
+      // 正常返回结果
       if (statusCode == 200) {
         return new HttpResponse<>(statusCode, serializeFunction.apply(response));
       }
 
+      // 客户端有缓存
       if (statusCode == 304) {
         return new HttpResponse<>(statusCode, null);
       }
