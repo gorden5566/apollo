@@ -564,6 +564,14 @@ public abstract class AbstractConfig implements Config {
     return false;
   }
 
+    /**
+     * 计算配置变更
+     *
+     * @param namespace
+     * @param previous
+     * @param current
+     * @return
+     */
   List<ConfigChange> calcPropertyChanges(String namespace, Properties previous,
                                          Properties current) {
     if (previous == null) {
@@ -577,28 +585,39 @@ public abstract class AbstractConfig implements Config {
     Set<String> previousKeys = previous.stringPropertyNames();
     Set<String> currentKeys = current.stringPropertyNames();
 
+    // 共同部分
     Set<String> commonKeys = Sets.intersection(previousKeys, currentKeys);
+
+    // 新增部分
     Set<String> newKeys = Sets.difference(currentKeys, commonKeys);
+
+    // 删除部分
     Set<String> removedKeys = Sets.difference(previousKeys, commonKeys);
 
     List<ConfigChange> changes = Lists.newArrayList();
 
+    // 新增的key
     for (String newKey : newKeys) {
       changes.add(new ConfigChange(namespace, newKey, null, current.getProperty(newKey),
           PropertyChangeType.ADDED));
     }
 
+    // 删除的key
     for (String removedKey : removedKeys) {
       changes.add(new ConfigChange(namespace, removedKey, previous.getProperty(removedKey), null,
           PropertyChangeType.DELETED));
     }
 
+    // 相同的key
     for (String commonKey : commonKeys) {
       String previousValue = previous.getProperty(commonKey);
       String currentValue = current.getProperty(commonKey);
+      // 无变化
       if (Objects.equal(previousValue, currentValue)) {
         continue;
       }
+
+      // 有变化
       changes.add(new ConfigChange(namespace, commonKey, previousValue, currentValue,
           PropertyChangeType.MODIFIED));
     }
