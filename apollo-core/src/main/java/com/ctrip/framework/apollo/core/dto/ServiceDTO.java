@@ -2,10 +2,19 @@ package com.ctrip.framework.apollo.core.dto;
 
 public class ServiceDTO {
 
+  /**
+   * app name
+   */
   private String appName;
 
+  /**
+   * 实例 id
+   */
   private String instanceId;
 
+  /**
+   * home url
+   */
   private String homepageUrl;
 
   public String getAppName() {
