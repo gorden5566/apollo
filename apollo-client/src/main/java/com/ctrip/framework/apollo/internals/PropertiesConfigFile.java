@@ -16,6 +16,9 @@ import com.ctrip.framework.apollo.util.ExceptionUtil;
  * @author Jason Song(song_s@ctrip.com)
  */
 public class PropertiesConfigFile extends AbstractConfigFile {
+  /**
+   * 配置内容缓存
+   */
   protected AtomicReference<String> m_contentCache;
 
   public PropertiesConfigFile(String namespace,
@@ -38,6 +41,11 @@ public class PropertiesConfigFile extends AbstractConfigFile {
     return m_contentCache.get();
   }
 
+  /**
+   * 获取配置内容
+   *
+   * @return
+   */
   String doGetContent() {
     if (!this.hasContent()) {
       return null;
