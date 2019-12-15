@@ -7,6 +7,8 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 
 /**
+ * 用于处理用户配置的 namespace 和 order
+ *
  * Apollo Property Sources processor for Spring XML Based Application
  *
  * @author Jason Song(song_s@ctrip.com)

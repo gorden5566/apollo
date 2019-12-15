@@ -27,6 +27,7 @@ public class NamespaceHandler extends NamespaceHandlerSupport {
   static class BeanParser extends AbstractSingleBeanDefinitionParser {
     @Override
     protected Class<?> getBeanClass(Element element) {
+      // xml 中 config 元素对应的 bean 类型
       return ConfigPropertySourcesProcessor.class;
     }
 
