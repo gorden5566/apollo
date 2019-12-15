@@ -49,24 +49,101 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class RemoteConfigLongPollService {
   private static final Logger logger = LoggerFactory.getLogger(RemoteConfigLongPollService.class);
+
+  /**
+   * string joiner
+   * 分隔符为 +
+   */
   private static final Joiner STRING_JOINER = Joiner.on(ConfigConsts.CLUSTER_NAMESPACE_SEPARATOR);
+
+  /**
+   * map joiner
+   * map 之间分隔符为 &
+   * key 和 value 之间分隔符为 =
+   */
   private static final Joiner.MapJoiner MAP_JOINER = Joiner.on("&").withKeyValueSeparator("=");
+
+  /**
+   * param escaper
+   */
   private static final Escaper queryParamEscaper = UrlEscapers.urlFormParameterEscaper();
+
+  /**
+   * 初始 ID 为 -1
+   */
   private static final long INIT_NOTIFICATION_ID = ConfigConsts.NOTIFICATION_ID_PLACEHOLDER;
-  //90 seconds, should be longer than server side's long polling timeout, which is now 60 seconds
+
+  /**
+   * 90 seconds, should be longer than server side's long polling timeout, which is now 60 seconds
+   */
   private static final int LONG_POLLING_READ_TIMEOUT = 90 * 1000;
+
+  /**
+   * 线程池
+   */
   private final ExecutorService m_longPollingService;
+
+  /**
+   * 长轮询是否已结束
+   */
   private final AtomicBoolean m_longPollingStopped;
+
+  /**
+   * 调度延迟策略
+   */
   private SchedulePolicy m_longPollFailSchedulePolicyInSecond;
+
+  /**
+   * 长轮询速率控制
+   */
   private RateLimiter m_longPollRateLimiter;
+
+  /**
+   * 长轮询是否已开始
+   */
   private final AtomicBoolean m_longPollStarted;
+
+  /**
+   * key: namespace
+   * value: 远程仓库
+   */
   private final Multimap<String, RemoteConfigRepository> m_longPollNamespaces;
+
+  /**
+   * key: namespace
+   * value: notification id
+   */
   private final ConcurrentMap<String, Long> m_notifications;
+
+  /**
+   * key: namespace
+   * value: notification message
+   */
   private final Map<String, ApolloNotificationMessages> m_remoteNotificationMessages;//namespaceName -> watchedKey -> notificationId
+
+  /**
+   * 响应类型
+   */
   private Type m_responseType;
+
+  /**
+   * gson
+   */
   private Gson gson;
+
+  /**
+   * config util
+   */
   private ConfigUtil m_configUtil;
+
+  /**
+   * http util
+   */
   private HttpUtil m_httpUtil;
+
+  /**
+   * service locator
+   */
   private ConfigServiceLocator m_serviceLocator;
 
   /**
@@ -100,11 +177,16 @@ public class RemoteConfigLongPollService {
     return added;
   }
 
+  /**
+   * 开始长轮询
+   */
   private void startLongPolling() {
+    // 已经开始则直接返回
     if (!m_longPollStarted.compareAndSet(false, true)) {
       //already started
       return;
     }
+
     try {
       final String appId = m_configUtil.getAppId();
       final String cluster = m_configUtil.getCluster();
@@ -113,6 +195,8 @@ public class RemoteConfigLongPollService {
       m_longPollingService.submit(new Runnable() {
         @Override
         public void run() {
+
+          // 初始延迟
           if (longPollingInitialDelayInMills > 0) {
             try {
               logger.debug("Long polling will start in {} ms.", longPollingInitialDelayInMills);
@@ -133,13 +217,25 @@ public class RemoteConfigLongPollService {
     }
   }
 
+  /**
+   * 停止长轮询
+   */
   void stopLongPollingRefresh() {
     this.m_longPollingStopped.compareAndSet(false, true);
   }
 
+  /**
+   * 执行长轮询更新
+   *
+   * @param appId
+   * @param cluster
+   * @param dataCenter
+   */
   private void doLongPollingRefresh(String appId, String cluster, String dataCenter) {
     final Random random = new Random();
     ServiceDTO lastServiceDto = null;
+
+    // 未停止 && 未被中断
     while (!m_longPollingStopped.get() && !Thread.currentThread().isInterrupted()) {
       if (!m_longPollRateLimiter.tryAcquire(5, TimeUnit.SECONDS)) {
         //wait at most 5 seconds
@@ -152,7 +248,10 @@ public class RemoteConfigLongPollService {
       String url = null;
       try {
         if (lastServiceDto == null) {
+          // get config service
           List<ServiceDTO> configServices = getConfigServices();
+
+          // random
           lastServiceDto = configServices.get(random.nextInt(configServices.size()));
         }
 
@@ -170,6 +269,7 @@ public class RemoteConfigLongPollService {
             m_httpUtil.doGet(request, m_responseType);
 
         logger.debug("Long polling response: {}, url: {}", response.getStatusCode(), url);
+        // 获取成功
         if (response.getStatusCode() == 200 && response.getBody() != null) {
           updateNotifications(response.getBody());
           updateRemoteNotifications(response.getBody());
@@ -189,6 +289,8 @@ public class RemoteConfigLongPollService {
         lastServiceDto = null;
         Tracer.logEvent("ApolloConfigException", ExceptionUtil.getDetailMessage(ex));
         transaction.setStatus(ex);
+
+        // 更新失败，等待一段时间
         long sleepTimeInSecond = m_longPollFailSchedulePolicyInSecond.fail();
         logger.warn(
             "Long polling failed, will retry in {} seconds. appId: {}, cluster: {}, namespaces: {}, long polling url: {}, reason: {}",
@@ -211,15 +313,21 @@ public class RemoteConfigLongPollService {
     for (ApolloConfigNotification notification : notifications) {
       String namespaceName = notification.getNamespaceName();
       //create a new list to avoid ConcurrentModificationException
+      // 要通知的仓库
       List<RemoteConfigRepository> toBeNotified =
           Lists.newArrayList(m_longPollNamespaces.get(namespaceName));
+
+      // 原始信息
       ApolloNotificationMessages originalMessages = m_remoteNotificationMessages.get(namespaceName);
+
+      // 拷贝一份
       ApolloNotificationMessages remoteMessages = originalMessages == null ? null : originalMessages.clone();
       //since .properties are filtered out by default, so we need to check if there is any listener for it
       toBeNotified.addAll(m_longPollNamespaces
           .get(String.format("%s.%s", namespaceName, ConfigFileFormat.Properties.getValue())));
       for (RemoteConfigRepository remoteConfigRepository : toBeNotified) {
         try {
+          // 通知仓库
           remoteConfigRepository.onLongPollNotified(lastServiceDto, remoteMessages);
         } catch (Throwable ex) {
           Tracer.logError(ex);
@@ -228,6 +336,11 @@ public class RemoteConfigLongPollService {
     }
   }
 
+  /**
+   * 更新 notification
+   *
+   * @param deltaNotifications
+   */
   private void updateNotifications(List<ApolloConfigNotification> deltaNotifications) {
     for (ApolloConfigNotification notification : deltaNotifications) {
       if (Strings.isNullOrEmpty(notification.getNamespaceName())) {
@@ -246,6 +359,11 @@ public class RemoteConfigLongPollService {
     }
   }
 
+  /**
+   * 更新 remote notification
+   *
+   * @param deltaNotifications
+   */
   private void updateRemoteNotifications(List<ApolloConfigNotification> deltaNotifications) {
     for (ApolloConfigNotification notification : deltaNotifications) {
       if (Strings.isNullOrEmpty(notification.getNamespaceName())) {
@@ -256,6 +374,7 @@ public class RemoteConfigLongPollService {
         continue;
       }
 
+      // 获取本地缓存
       ApolloNotificationMessages localRemoteMessages =
           m_remoteNotificationMessages.get(notification.getNamespaceName());
       if (localRemoteMessages == null) {
@@ -263,6 +382,7 @@ public class RemoteConfigLongPollService {
         m_remoteNotificationMessages.put(notification.getNamespaceName(), localRemoteMessages);
       }
 
+      // 合并远程更新
       localRemoteMessages.mergeFrom(notification.getMessages());
     }
   }
@@ -271,6 +391,16 @@ public class RemoteConfigLongPollService {
     return STRING_JOINER.join(m_longPollNamespaces.keySet());
   }
 
+  /**
+   * 组装长轮询url
+   *
+   * @param uri
+   * @param appId
+   * @param cluster
+   * @param dataCenter
+   * @param notificationsMap key:namespace value: notification id
+   * @return
+   */
   String assembleLongPollRefreshUrl(String uri, String appId, String cluster, String dataCenter,
                                     Map<String, Long> notificationsMap) {
     Map<String, String> queryParams = Maps.newHashMap();
