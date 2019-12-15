@@ -46,26 +46,94 @@ import com.google.gson.Gson;
  */
 public class RemoteConfigRepository extends AbstractConfigRepository {
   private static final Logger logger = LoggerFactory.getLogger(RemoteConfigRepository.class);
+
+  /**
+   * string joiner
+   */
   private static final Joiner STRING_JOINER = Joiner.on(ConfigConsts.CLUSTER_NAMESPACE_SEPARATOR);
+
+  /**
+   * map joiner
+   */
   private static final Joiner.MapJoiner MAP_JOINER = Joiner.on("&").withKeyValueSeparator("=");
+
+  /**
+   * path escaper
+   */
   private static final Escaper pathEscaper = UrlEscapers.urlPathSegmentEscaper();
+
+  /**
+   * param escaper
+   */
   private static final Escaper queryParamEscaper = UrlEscapers.urlFormParameterEscaper();
 
+  /**
+   * service locator
+   */
   private final ConfigServiceLocator m_serviceLocator;
+
+  /**
+   * http util
+   */
   private final HttpUtil m_httpUtil;
+
+  /**
+   * config util
+   */
   private final ConfigUtil m_configUtil;
+
+  /**
+   * 远程配置长轮询服务
+   */
   private final RemoteConfigLongPollService remoteConfigLongPollService;
+
+  /**
+   * apollo config 的内存缓存
+   */
   private volatile AtomicReference<ApolloConfig> m_configCache;
+
+  /**
+   * 配置的 namespace
+   */
   private final String m_namespace;
+
+  /**
+   * 远程仓库同步操作线程池
+   */
   private final static ScheduledExecutorService m_executorService;
+
+  /**
+   * 长轮询的 service 信息
+   */
   private final AtomicReference<ServiceDTO> m_longPollServiceDto;
+
+  /**
+   * 长轮询结果信息
+   */
   private final AtomicReference<ApolloNotificationMessages> m_remoteMessages;
+
+  /**
+   * 加载远程配置的速率控制
+   */
   private final RateLimiter m_loadConfigRateLimiter;
+
+  /**
+   * 是否强制刷新
+   */
   private final AtomicBoolean m_configNeedForceRefresh;
+
+  /**
+   * 失败处理策略
+   */
   private final SchedulePolicy m_loadConfigFailSchedulePolicy;
+
+  /**
+   * json 工具
+   */
   private final Gson gson;
 
   static {
+    // daemon 线程，核心线程数为 1
     m_executorService = Executors.newScheduledThreadPool(1,
         ApolloThreadFactory.create("RemoteConfigRepository", true));
   }
@@ -112,6 +180,9 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
     return ConfigSourceType.REMOTE;
   }
 
+  /**
+   * 固定周期同步远程配置
+   */
   private void schedulePeriodicRefresh() {
     logger.debug("Schedule periodic refresh with interval: {} {}",
         m_configUtil.getRefreshInterval(), m_configUtil.getRefreshIntervalTimeUnit());
@@ -133,7 +204,10 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
     Transaction transaction = Tracer.newTransaction("Apollo.ConfigService", "syncRemoteConfig");
 
     try {
+      // 从缓存中获取原始配置
       ApolloConfig previous = m_configCache.get();
+
+      // 加载当前配置
       ApolloConfig current = loadApolloConfig();
 
       //reference equals means HTTP 304
@@ -157,13 +231,25 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
     }
   }
 
+  /**
+   * 将 apollo config 转换为 properties
+   *
+   * @param apolloConfig
+   * @return
+   */
   private Properties transformApolloConfigToProperties(ApolloConfig apolloConfig) {
     Properties result = new Properties();
     result.putAll(apolloConfig.getConfigurations());
     return result;
   }
 
+  /**
+   * 加载 apollo config
+   *
+   * @return
+   */
   private ApolloConfig loadApolloConfig() {
+    // qps 限制
     if (!m_loadConfigRateLimiter.tryAcquire(5, TimeUnit.SECONDS)) {
       //wait at most 5 seconds
       try {
@@ -171,6 +257,7 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
       } catch (InterruptedException e) {
       }
     }
+
     String appId = m_configUtil.getAppId();
     String cluster = m_configUtil.getCluster();
     String dataCenter = m_configUtil.getDataCenter();
@@ -179,6 +266,7 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
     long onErrorSleepTime = 0; // 0 means no sleep
     Throwable exception = null;
 
+    // get config service
     List<ServiceDTO> configServices = getConfigServices();
     String url = null;
     for (int i = 0; i < maxRetries; i++) {
@@ -219,11 +307,13 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
           transaction.addData("StatusCode", response.getStatusCode());
           transaction.setStatus(Transaction.SUCCESS);
 
+          // 无变更，从本地内存获取
           if (response.getStatusCode() == 304) {
             logger.debug("Config server responds with 304 HTTP status code.");
             return m_configCache.get();
           }
 
+          // 响应内容
           ApolloConfig result = response.getBody();
 
           logger.debug("Loaded config for {}: {}", m_namespace, result);
@@ -263,6 +353,18 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
     throw new ApolloConfigException(message, exception);
   }
 
+  /**
+   * 组装查询配置的url
+   *
+   * @param uri
+   * @param appId
+   * @param cluster
+   * @param namespace
+   * @param dataCenter
+   * @param remoteMessages
+   * @param previousConfig
+   * @return
+   */
   String assembleQueryConfigUrl(String uri, String appId, String cluster, String namespace,
                                 String dataCenter, ApolloNotificationMessages remoteMessages, ApolloConfig previousConfig) {
 
@@ -300,10 +402,19 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
     return uri + pathExpanded;
   }
 
+  /**
+   * 定时长轮询更新
+   */
   private void scheduleLongPollingRefresh() {
     remoteConfigLongPollService.submit(m_namespace, this);
   }
 
+  /**
+   * 通知长轮询结果
+   *
+   * @param longPollNotifiedServiceDto
+   * @param remoteMessages
+   */
   public void onLongPollNotified(ServiceDTO longPollNotifiedServiceDto, ApolloNotificationMessages remoteMessages) {
     m_longPollServiceDto.set(longPollNotifiedServiceDto);
     m_remoteMessages.set(remoteMessages);
