@@ -11,6 +11,8 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 
 /**
+ * 用于解析 XML 配置
+ *
  * @author Jason Song(song_s@ctrip.com)
  */
 public class NamespaceHandler extends NamespaceHandlerSupport {
@@ -18,6 +20,7 @@ public class NamespaceHandler extends NamespaceHandlerSupport {
 
   @Override
   public void init() {
+    // 注册 BeanDefinitionParser
     registerBeanDefinitionParser("config", new BeanParser());
   }
 
@@ -34,12 +37,14 @@ public class NamespaceHandler extends NamespaceHandlerSupport {
 
     @Override
     protected void doParse(Element element, BeanDefinitionBuilder builder) {
+      // 解析namespace
       String namespaces = element.getAttribute("namespaces");
       //default to application
       if (Strings.isNullOrEmpty(namespaces)) {
         namespaces = ConfigConsts.NAMESPACE_APPLICATION;
       }
 
+      // 解析order
       int order = Ordered.LOWEST_PRECEDENCE;
       String orderAttribute = element.getAttribute("order");
 
@@ -51,6 +56,8 @@ public class NamespaceHandler extends NamespaceHandlerSupport {
               String.format("Invalid order: %s for namespaces: %s", orderAttribute, namespaces));
         }
       }
+
+      // 与spring整合
       PropertySourcesProcessor.addNamespaces(NAMESPACE_SPLITTER.splitToList(namespaces), order);
     }
   }
