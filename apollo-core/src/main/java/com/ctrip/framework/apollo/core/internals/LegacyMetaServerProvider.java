@@ -13,8 +13,15 @@ import java.util.Properties;
  */
 public class LegacyMetaServerProvider implements MetaServerProvider {
 
-  // make it as lowest as possible, yet not the lowest
+  /**
+   * make it as lowest as possible, yet not the lowest
+   */
   public static final int ORDER = MetaServerProvider.LOWEST_PRECEDENCE - 1;
+
+  /**
+   * key: env
+   * value: meta server address
+   */
   private static final Map<Env, String> domains = new HashMap<>();
 
   public LegacyMetaServerProvider() {
@@ -23,6 +30,8 @@ public class LegacyMetaServerProvider implements MetaServerProvider {
 
   private void initialize() {
     Properties prop = new Properties();
+
+    // 从配置文件加载
     prop = ResourceUtils.readConfigFile("apollo-env.properties", prop);
 
     domains.put(Env.LOCAL, getMetaServerAddress(prop, "local_meta", "local.meta"));
