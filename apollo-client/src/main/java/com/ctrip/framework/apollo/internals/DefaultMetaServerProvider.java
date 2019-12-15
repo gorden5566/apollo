@@ -8,17 +8,28 @@ import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 默认实现，不区分环境
+ */
 public class DefaultMetaServerProvider implements MetaServerProvider {
 
   public static final int ORDER = 0;
   private static final Logger logger = LoggerFactory.getLogger(DefaultMetaServerProvider.class);
 
+  /**
+   * meta server address
+   */
   private final String metaServerAddress;
 
   public DefaultMetaServerProvider() {
     metaServerAddress = initMetaServerAddress();
   }
 
+  /**
+   * 初始化 meta server address
+   *
+   * @return
+   */
   private String initMetaServerAddress() {
     // 1. Get from System Property
     String metaAddress = System.getProperty(ConfigConsts.APOLLO_META_KEY);
