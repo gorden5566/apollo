@@ -9,6 +9,11 @@ import java.util.Map;
  * @author Jason Song(song_s@ctrip.com)
  */
 public class ApolloNotificationMessages {
+
+  /**
+   * key: namespace
+   * value: notification id
+   */
   private Map<String, Long> details;
 
   public ApolloNotificationMessages() {
@@ -58,6 +63,7 @@ public class ApolloNotificationMessages {
     }
   }
 
+  @Override
   public ApolloNotificationMessages clone() {
     return new ApolloNotificationMessages(ImmutableMap.copyOf(this.details));
   }
