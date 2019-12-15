@@ -39,18 +39,45 @@ import com.google.common.collect.Maps;
  * @see com.ctrip.framework.apollo.core.internals.LegacyMetaServerProvider
  */
 public class MetaDomainConsts {
+  private static final Logger logger = LoggerFactory.getLogger(MetaDomainConsts.class);
+
+  /**
+   * 默认的 meta url
+   */
   public static final String DEFAULT_META_URL = "http://apollo.meta";
 
-  // env -> meta server address cache
+  /**
+   * key: env
+   * value: meta server address
+   */
   private static final Map<Env, String> metaServerAddressCache = Maps.newConcurrentMap();
+
+  /**
+   * meta server provider
+   * 通过 spi 机制加载
+   */
   private static volatile List<MetaServerProvider> metaServerProviders = null;
 
-  private static final long REFRESH_INTERVAL_IN_SECOND = 60;// 1 min
-  private static final Logger logger = LoggerFactory.getLogger(MetaDomainConsts.class);
+  /**
+   * 更新周期 60s
+   */
+  private static final long REFRESH_INTERVAL_IN_SECOND = 60;
+
   // comma separated meta server address -> selected single meta server address cache
+  /**
+   * key: 多个 meta server address，使用逗号分隔
+   * value: 选择出来的一个 meta server address
+   */
   private static final Map<String, String> selectedMetaServerAddressCache = Maps.newConcurrentMap();
+
+  /**
+   * 周期更新是否已开启
+   */
   private static final AtomicBoolean periodicRefreshStarted = new AtomicBoolean(false);
 
+  /**
+   * 锁对象
+   */
   private static final Object LOCK = new Object();
 
   /**
@@ -70,16 +97,23 @@ public class MetaDomainConsts {
    */
   public static String getMetaServerAddress(Env env) {
     if (!metaServerAddressCache.containsKey(env)) {
+      // 初始化 meta server address
       initMetaServerAddress(env);
     }
 
     return metaServerAddressCache.get(env);
   }
 
+  /**
+   * 初始化 meta server address
+   *
+   * @param env
+   */
   private static void initMetaServerAddress(Env env) {
     if (metaServerProviders == null) {
       synchronized (LOCK) {
         if (metaServerProviders == null) {
+          // 初始化 meta server provider
           metaServerProviders = initMetaServerProviders();
         }
       }
@@ -89,6 +123,7 @@ public class MetaDomainConsts {
 
     for (MetaServerProvider provider : metaServerProviders) {
       metaAddress = provider.getMetaServerAddress(env);
+      // 找到一个不为空的
       if (!Strings.isNullOrEmpty(metaAddress)) {
         logger.info("Located meta server address {} for env {} from {}", metaAddress, env,
             provider.getClass().getName());
@@ -98,6 +133,7 @@ public class MetaDomainConsts {
 
     if (Strings.isNullOrEmpty(metaAddress)) {
       // Fallback to default meta address
+      // 未找到，则使用默认 meta url
       metaAddress = DEFAULT_META_URL;
       logger.warn(
           "Meta server address fallback to {} for env {}, because it is not available in all MetaServerProviders",
@@ -107,11 +143,18 @@ public class MetaDomainConsts {
     metaServerAddressCache.put(env, metaAddress.trim());
   }
 
+  /**
+   * 初始化 meta server provider
+   *
+   * @return
+   */
   private static List<MetaServerProvider> initMetaServerProviders() {
+    // 加载 spi 实现
     Iterator<MetaServerProvider> metaServerProviderIterator = ServiceBootstrap.loadAll(MetaServerProvider.class);
 
     List<MetaServerProvider> metaServerProviders = Lists.newArrayList(metaServerProviderIterator);
 
+    // 排序
     Collections.sort(metaServerProviders, new Comparator<MetaServerProvider>() {
       @Override
       public int compare(MetaServerProvider o1, MetaServerProvider o2) {
@@ -120,6 +163,7 @@ public class MetaDomainConsts {
       }
     });
 
+    // 取优先级最高的(order值最小)
     return metaServerProviders;
   }
 
@@ -137,8 +181,11 @@ public class MetaDomainConsts {
     if (metaAddressSelected == null) {
       // initialize
       if (periodicRefreshStarted.compareAndSet(false, true)) {
+        // 开启周期更新
         schedulePeriodicRefresh();
       }
+
+      // 直接更新
       updateMetaServerAddresses(metaServerAddresses);
       metaAddressSelected = selectedMetaServerAddressCache.get(metaServerAddresses);
     }
@@ -146,6 +193,11 @@ public class MetaDomainConsts {
     return metaAddressSelected;
   }
 
+  /**
+   * 更新 meta server address
+   *
+   * @param metaServerAddresses
+   */
   private static void updateMetaServerAddresses(String metaServerAddresses) {
     logger.debug("Selecting meta server address for: {}", metaServerAddresses);
 
@@ -155,6 +207,7 @@ public class MetaDomainConsts {
     try {
       List<String> metaServers = Lists.newArrayList(metaServerAddresses.split(","));
       // random load balancing
+      // 随机排序
       Collections.shuffle(metaServers);
 
       boolean serverAvailable = false;
@@ -164,6 +217,7 @@ public class MetaDomainConsts {
         //check whether /services/config is accessible
         if (NetUtil.pingUrl(address + "/services/config")) {
           // select the first available meta server
+          // 找到第一个可用的
           selectedMetaServerAddressCache.put(metaServerAddresses, address);
           serverAvailable = true;
           logger.debug("Selected meta server address {} for {}", address, metaServerAddresses);

@@ -174,6 +174,11 @@ public class ConfigUtil {
     return Foundation.net().getHostAddress();
   }
 
+  /**
+   * 获取 meta server address
+   *
+   * @return
+   */
   public String getMetaServerDomainName() {
     return MetaDomainConsts.getDomain(getApolloEnv());
   }
