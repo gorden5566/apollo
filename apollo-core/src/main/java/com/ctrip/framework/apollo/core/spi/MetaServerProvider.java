@@ -3,6 +3,8 @@ package com.ctrip.framework.apollo.core.spi;
 import com.ctrip.framework.apollo.core.enums.Env;
 
 /**
+ * 用于获取 meta server address
+ *
  * @since 1.0.0
  */
 public interface MetaServerProvider extends Ordered {
