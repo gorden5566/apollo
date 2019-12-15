@@ -1,5 +1,8 @@
 package com.ctrip.framework.apollo.spring.config;
 
+/**
+ * PropertySources 常量
+ */
 public interface PropertySourcesConstants {
   String APOLLO_PROPERTY_SOURCE_NAME = "ApolloPropertySources";
   String APOLLO_BOOTSTRAP_PROPERTY_SOURCE_NAME = "ApolloBootstrapPropertySources";
