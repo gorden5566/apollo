@@ -4,8 +4,19 @@ package com.ctrip.framework.apollo.core.dto;
  * @author Jason Song(song_s@ctrip.com)
  */
 public class ApolloConfigNotification {
+  /**
+   * namespace
+   */
   private String namespaceName;
+
+  /**
+   * notification id
+   */
   private long notificationId;
+
+  /**
+   * message
+   */
   private volatile ApolloNotificationMessages messages;
 
   //for json converter
