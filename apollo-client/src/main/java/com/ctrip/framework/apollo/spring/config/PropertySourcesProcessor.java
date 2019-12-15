@@ -42,14 +42,41 @@ import org.springframework.util.CollectionUtils;
  * @author Jason Song(song_s@ctrip.com)
  */
 public class PropertySourcesProcessor implements BeanFactoryPostProcessor, EnvironmentAware, PriorityOrdered {
+
+  /**
+   * key: order 优先级
+   * value: namespace
+   */
   private static final Multimap<Integer, String> NAMESPACE_NAMES = LinkedHashMultimap.create();
+
+  /**
+   * spring bean factory
+   */
   private static final Set<BeanFactory> AUTO_UPDATE_INITIALIZED_BEAN_FACTORIES = Sets.newConcurrentHashSet();
 
+  /**
+   * ConfigPropertySource factory
+   */
   private final ConfigPropertySourceFactory configPropertySourceFactory = SpringInjector
       .getInstance(ConfigPropertySourceFactory.class);
+
+  /**
+   * config util
+   */
   private final ConfigUtil configUtil = ApolloInjector.getInstance(ConfigUtil.class);
+
+  /**
+   * environment
+   */
   private ConfigurableEnvironment environment;
 
+  /**
+   * 添加 namespace
+   *
+   * @param namespaces namespace 列表
+   * @param order 优先级
+   * @return
+   */
   public static boolean addNamespaces(Collection<String> namespaces, int order) {
     return NAMESPACE_NAMES.putAll(order, namespaces);
   }
@@ -60,11 +87,16 @@ public class PropertySourcesProcessor implements BeanFactoryPostProcessor, Envir
     initializeAutoUpdatePropertiesFeature(beanFactory);
   }
 
+  /**
+   * 初始化 property source
+   */
   private void initializePropertySources() {
+    // 已经初始化则直接返回
     if (environment.getPropertySources().contains(PropertySourcesConstants.APOLLO_PROPERTY_SOURCE_NAME)) {
       //already initialized
       return;
     }
+
     CompositePropertySource composite = new CompositePropertySource(PropertySourcesConstants.APOLLO_PROPERTY_SOURCE_NAME);
 
     //sort by order asc
@@ -73,9 +105,13 @@ public class PropertySourcesProcessor implements BeanFactoryPostProcessor, Envir
 
     while (iterator.hasNext()) {
       int order = iterator.next();
+      // 按优先级处理
       for (String namespace : NAMESPACE_NAMES.get(order)) {
+
+        // 根据 namespace 获取 config
         Config config = ConfigService.getConfig(namespace);
 
+        // 添加到 CompositePropertySource 和 ConfigPropertySourceFactory
         composite.addPropertySource(configPropertySourceFactory.getConfigPropertySource(namespace, config));
       }
     }
@@ -92,14 +128,21 @@ public class PropertySourcesProcessor implements BeanFactoryPostProcessor, Envir
     // add after the bootstrap property source or to the first
     if (environment.getPropertySources()
         .contains(PropertySourcesConstants.APOLLO_BOOTSTRAP_PROPERTY_SOURCE_NAME)) {
+      // 把 composite 添加到 ApolloBootstrapPropertySources 后面
       environment.getPropertySources()
           .addAfter(PropertySourcesConstants.APOLLO_BOOTSTRAP_PROPERTY_SOURCE_NAME, composite);
     } else {
+      // 把 composite 添加到第一个位置
       environment.getPropertySources().addFirst(composite);
     }
 
   }
 
+  /**
+   * 确保 ApolloBootstrapPropertySources 是第一个
+   *
+   * @param environment
+   */
   private void ensureBootstrapPropertyPrecedence(ConfigurableEnvironment environment) {
     MutablePropertySources propertySources = environment.getPropertySources();
 
@@ -111,20 +154,31 @@ public class PropertySourcesProcessor implements BeanFactoryPostProcessor, Envir
       return;
     }
 
+    // 先移除，再添加到第一个位置
     propertySources.remove(PropertySourcesConstants.APOLLO_BOOTSTRAP_PROPERTY_SOURCE_NAME);
     propertySources.addFirst(bootstrapPropertySource);
   }
 
+  /**
+   * 初始化自动更新 Properties 功能
+   *
+   * @param beanFactory
+   */
   private void initializeAutoUpdatePropertiesFeature(ConfigurableListableBeanFactory beanFactory) {
+    // 不是自动更新，或者已经处理过，则直接返回
     if (!configUtil.isAutoUpdateInjectedSpringPropertiesEnabled() ||
         !AUTO_UPDATE_INITIALIZED_BEAN_FACTORIES.add(beanFactory)) {
       return;
     }
 
+    // 创建 config 变更监听器
     AutoUpdateConfigChangeListener autoUpdateConfigChangeListener = new AutoUpdateConfigChangeListener(
         environment, beanFactory);
 
+    // 获取所有的 ConfigPropertySource
     List<ConfigPropertySource> configPropertySources = configPropertySourceFactory.getAllConfigPropertySources();
+
+    // 添加监听器
     for (ConfigPropertySource configPropertySource : configPropertySources) {
       configPropertySource.addChangeListener(autoUpdateConfigChangeListener);
     }
