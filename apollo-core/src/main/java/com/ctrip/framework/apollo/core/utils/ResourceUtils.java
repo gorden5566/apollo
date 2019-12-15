@@ -15,6 +15,10 @@ import java.util.Properties;
 public class ResourceUtils {
 
   private static final Logger logger = LoggerFactory.getLogger(ResourceUtils.class);
+
+  /**
+   * 子文件夹
+   */
   private static final String[] DEFAULT_FILE_SEARCH_LOCATIONS = new String[]{"./config/", "./"};
 
   @SuppressWarnings("unchecked")
@@ -61,6 +65,8 @@ public class ResourceUtils {
     try {
       // load from default search locations
       for (String searchLocation : DEFAULT_FILE_SEARCH_LOCATIONS) {
+
+        // 要读取的文件
         File candidate = Paths.get(searchLocation, configPath).toFile();
         if (candidate.exists() && candidate.isFile() && candidate.canRead()) {
           logger.debug("Reading config from resource {}", candidate.getAbsolutePath());
