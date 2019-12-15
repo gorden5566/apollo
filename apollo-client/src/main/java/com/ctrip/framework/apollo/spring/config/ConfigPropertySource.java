@@ -21,6 +21,7 @@ public class ConfigPropertySource extends EnumerablePropertySource<Config> {
 
   @Override
   public String[] getPropertyNames() {
+    // 获取 property name
     Set<String> propertyNames = this.source.getPropertyNames();
     if (propertyNames.isEmpty()) {
       return EMPTY_ARRAY;
@@ -30,9 +31,15 @@ public class ConfigPropertySource extends EnumerablePropertySource<Config> {
 
   @Override
   public Object getProperty(String name) {
+    // 获取属性值
     return this.source.getProperty(name, null);
   }
 
+  /**
+   * 添加 config 变更监听器
+   *
+   * @param listener
+   */
   public void addChangeListener(ConfigChangeListener listener) {
     this.source.addChangeListener(listener);
   }
