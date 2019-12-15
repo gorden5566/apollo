@@ -7,14 +7,30 @@ import java.util.Map;
  */
 public class ApolloConfig {
 
+  /**
+   * app id
+   */
   private String appId;
 
+  /**
+   * cluster
+   */
   private String cluster;
 
+  /**
+   * namespace
+   */
   private String namespaceName;
 
+  /**
+   * key: 配置的key
+   * value: 配置的值
+   */
   private Map<String, String> configurations;
 
+  /**
+   * 发布的版本
+   */
   private String releaseKey;
 
   public ApolloConfig() {
