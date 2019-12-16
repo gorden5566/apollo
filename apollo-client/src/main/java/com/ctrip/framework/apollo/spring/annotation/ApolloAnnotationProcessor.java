@@ -23,28 +23,35 @@ public class ApolloAnnotationProcessor extends ApolloProcessor {
 
   @Override
   protected void processField(Object bean, String beanName, Field field) {
+    // 获取字段上的注解
     ApolloConfig annotation = AnnotationUtils.getAnnotation(field, ApolloConfig.class);
     if (annotation == null) {
       return;
     }
 
+    // 字段类型校验
     Preconditions.checkArgument(Config.class.isAssignableFrom(field.getType()),
         "Invalid type: %s for field: %s, should be Config", field.getType(), field);
 
+    // 获取配置
     String namespace = annotation.value();
     Config config = ConfigService.getConfig(namespace);
 
+    // 设置 bean 的值
     ReflectionUtils.makeAccessible(field);
     ReflectionUtils.setField(field, bean, config);
   }
 
   @Override
   protected void processMethod(final Object bean, String beanName, final Method method) {
+    // 获取方法上的注解
     ApolloConfigChangeListener annotation = AnnotationUtils
         .findAnnotation(method, ApolloConfigChangeListener.class);
     if (annotation == null) {
       return;
     }
+
+    // 方法参数校验
     Class<?>[] parameterTypes = method.getParameterTypes();
     Preconditions.checkArgument(parameterTypes.length == 1,
         "Invalid number of parameters: %s for method: %s, should be 1", parameterTypes.length,
@@ -54,9 +61,13 @@ public class ApolloAnnotationProcessor extends ApolloProcessor {
         method);
 
     ReflectionUtils.makeAccessible(method);
+
+    // 注解配置
     String[] namespaces = annotation.value();
     String[] annotatedInterestedKeys = annotation.interestedKeys();
     String[] annotatedInterestedKeyPrefixes = annotation.interestedKeyPrefixes();
+
+    // 构建 ConfigChangeListener
     ConfigChangeListener configChangeListener = new ConfigChangeListener() {
       @Override
       public void onChange(ConfigChangeEvent changeEvent) {
@@ -68,8 +79,10 @@ public class ApolloAnnotationProcessor extends ApolloProcessor {
     Set<String> interestedKeyPrefixes = annotatedInterestedKeyPrefixes.length > 0 ? Sets.newHashSet(annotatedInterestedKeyPrefixes) : null;
 
     for (String namespace : namespaces) {
+      // 获取 config
       Config config = ConfigService.getConfig(namespace);
 
+      // 添加 ConfigChangeListener
       if (interestedKeys == null && interestedKeyPrefixes == null) {
         config.addChangeListener(configChangeListener);
       } else {
